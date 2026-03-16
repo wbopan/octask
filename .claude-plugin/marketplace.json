@@ -1,0 +1,18 @@
+{
+  "name": "task-management-marketplace",
+  "description": "Phase-gate task management plugin for Claude Code",
+  "owner": {
+    "name": "Wenbo Pan"
+  },
+  "plugins": [
+    {
+      "name": "task-management",
+      "description": "Phase-gate task management with TASKS.md kanban dashboard",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Wenbo Pan"
+      }
+    }
+  ]
+}
