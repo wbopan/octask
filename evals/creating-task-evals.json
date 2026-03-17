@@ -5,7 +5,7 @@
       "id": 1,
       "name": "simple-task-acts-immediately",
       "prompt": "The user's TASKS.md is at the working directory. The user invokes /creating-task with args 'Add rate limiting to API endpoints'. Follow the skill instructions.",
-      "expected_output": "Should immediately create a task in TASKS.md without asking for confirmation first. Should place it in Phase 1 (the phase with active work), generate a slug, write a reasonable AC, and confirm briefly in 1-2 lines (no table).",
+      "expected_output": "Should immediately create a task in TASKS.md without asking for confirmation first. Should place it in the section with active work, generate a slug, write a reasonable AC, and confirm briefly in 1-2 lines (no table).",
       "assertions": [
         {"name": "task-created-in-file", "type": "file_contains", "file": "TASKS.md", "value": "rate limit"},
         {"name": "has-slug", "type": "file_contains_regex", "file": "TASKS.md", "value": "#[a-z-]+limit"},
@@ -18,11 +18,11 @@
     },
     {
       "id": 2,
-      "name": "task-with-phase-and-ac",
-      "prompt": "The user's TASKS.md is at the working directory. The user invokes /creating-task with args 'Add WebSocket support for real-time updates in Phase 2, AC: Dashboard receives live updates without polling'. Follow the skill instructions.",
-      "expected_output": "Should immediately create the task in Phase 2, using the provided AC verbatim, without asking for confirmation.",
+      "name": "task-with-section-and-ac",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /creating-task with args 'Add WebSocket support for real-time updates in the Frontend section, AC: Dashboard receives live updates without polling'. Follow the skill instructions.",
+      "expected_output": "Should immediately create the task in the Frontend section, using the provided AC verbatim, without asking for confirmation.",
       "assertions": [
-        {"name": "task-in-phase2", "type": "file_contains", "file": "TASKS.md", "value": "WebSocket"},
+        {"name": "task-in-frontend-section", "type": "file_contains", "file": "TASKS.md", "value": "WebSocket"},
         {"name": "ac-preserved", "type": "file_contains", "file": "TASKS.md", "value": "without polling"},
         {"name": "no-asking-permission", "type": "output_not_contains_any", "values": ["Should I", "Want me to", "Shall I create"]}
       ],

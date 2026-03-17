@@ -5,7 +5,7 @@
       "id": 1,
       "name": "explicit-slug-todo",
       "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#error-handling-middleware'. Follow the skill instructions to identify the task, mark it ongoing, announce it, and describe what you would do to execute it (don't actually write code, just explain your plan).",
-      "expected_output": "Should find the 'Error handling middleware #error-handling-middleware' task in Phase 1, change its status from [ ] to [/] in TASKS.md, announce the task, and outline an execution plan based on its AC.",
+      "expected_output": "Should find the 'Error handling middleware #error-handling-middleware' task, change its status from [ ] to [/] in TASKS.md, announce the task, and outline an execution plan based on its AC.",
       "assertions": [
         {"name": "found-correct-task", "type": "output_contains", "value": "error-handling-middleware"},
         {"name": "marked-ongoing", "type": "file_contains", "file": "TASKS.md", "value": "[/] Error handling middleware"},

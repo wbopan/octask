@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Octask — a Claude Code plugin that adds phase-gate task management via `TASKS.md` files and a real-time kanban dashboard. Installed as a Claude Code plugin, it provides slash commands (`/dashboard`, `/starting-task`), hooks (heartbeat reporting), and a skill (TASKS.md conventions).
+Octask — a Claude Code plugin that adds task management via `TASKS.md` files and a real-time kanban dashboard. Installed as a Claude Code plugin, it provides slash commands (`/dashboard`, `/starting-task`), hooks (heartbeat reporting), and a skill (TASKS.md conventions).
 
 ## Development Commands
 
@@ -30,7 +30,7 @@ The plugin is discovered via `.claude-plugin/plugin.json`. It registers:
 
 - **Hooks** (`hooks/hooks.json`): `heartbeat.sh` runs async on 6 lifecycle events (SessionStart, UserPromptSubmit, PostToolUse, Stop, Notification, SessionEnd), POSTing session state (`idle`/`running`/`permission`/`notfound`) to `localhost:3847/api/heartbeat`.
 - **Slash commands** (`commands/`): `/dashboard` starts the server and opens the browser; `/starting-task` finds a task by slug, marks it `[/]`, and begins execution.
-- **Skill** (`skills/octask/SKILL.md`): Defines the full TASKS.md convention — status symbols, phase-gate model, AC rules, completion workflow. This is the source of truth for how AI should read/write TASKS.md.
+- **Skill** (`skills/octask/SKILL.md`): Defines the full TASKS.md convention — status symbols, AC rules, completion workflow. This is the source of truth for how AI should read/write TASKS.md.
 - **Post-install** (`hooks/post-install.sh`): Runs `npm install` in `server/` and symlinks `scripts/task-dashboard.sh` to `~/.local/bin/task-dashboard`.
 
 ### Server (`server/server.js`)
@@ -48,10 +48,10 @@ Single-file Express server (ESM, port 3847). No build step.
 
 All-in-one file, no framework or build tooling. Key internals:
 
-- **Parser** (`parseTasksMd`): Line-by-line state machine parsing `## Phase` headers, `Goal:` lines, and `- [status] Title #slug` task items with indented description/AC.
-- **Serializer** (`toMarkdown`): Reconstructs TASKS.md from the in-memory `phases[]` model, preserving preamble text.
-- **Board**: 4 columns (ongoing/todo/backlog/done), HTML5 drag-and-drop, phase grouping.
-- **Sidebar**: Progress stats, per-phase breakdown, usage bars from `/api/usage`.
+- **Parser** (`parseTasksMd`): Line-by-line state machine parsing `## Section` headers, `Description:` lines, and `- [status] Title #slug` task items with indented description/AC.
+- **Serializer** (`toMarkdown`): Reconstructs TASKS.md from the in-memory model, preserving preamble text.
+- **Board**: 4 columns (ongoing/todo/backlog/done), HTML5 drag-and-drop, section grouping.
+- **Sidebar**: Progress stats, per-section breakdown, usage bars from `/api/usage`.
 - **State**: Undo stack (50 deep, Cmd+Z), auto-save with 600ms debounce + exponential backoff retries, SSE-based external change detection with conflict banner.
 
 ### TASKS.md Convention (from skill spec)

@@ -194,7 +194,7 @@
       font-size: 13px;
     }
 
-    .add-phase-btn {
+    .add-section-btn {
       width: 22px;
       height: 22px;
       padding: 0;
@@ -213,8 +213,8 @@
       cursor: pointer;
     }
 
-    .sidebar-card:hover .add-phase-btn { opacity: 1; }
-    .add-phase-btn:hover {
+    .sidebar-card:hover .add-section-btn { opacity: 1; }
+    .add-section-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -291,21 +291,19 @@
       text-align: right;
     }
 
-    /* Phase list */
-    .phase-list {
+    /* Section list */
+    .section-list {
       padding: 0;
       margin-top: 12px;
       border-top: 1px solid var(--border-light);
       padding-top: 8px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-light);
     }
 
-    .phase-list::-webkit-scrollbar { width: 4px; }
-    .phase-list::-webkit-scrollbar-track { background: transparent; }
-    .phase-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .section-list::-webkit-scrollbar { width: 4px; }
+    .section-list::-webkit-scrollbar-track { background: transparent; }
+    .section-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    .phase-item {
+    .section-item {
       padding: 8px 10px;
       cursor: pointer;
       transition: background 0.15s;
@@ -314,21 +312,21 @@
       margin: 1px 0;
     }
 
-    .phase-item:hover { background: var(--bg-warm); }
+    .section-item:hover { background: var(--bg-warm); }
 
-    .phase-item.active {
+    .section-item.active {
       background: var(--accent-light);
       border-left-color: var(--accent);
     }
 
-    .phase-item-header {
+    .section-item-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 4px;
     }
 
-    .phase-item-name {
+    .section-item-name {
       font-size: 13px;
       font-weight: 700;
       color: var(--text);
@@ -338,7 +336,7 @@
       flex: 1;
     }
 
-    .phase-item-count {
+    .section-item-count {
       font-size: 12px;
       font-weight: 400;
       color: var(--text-muted);
@@ -347,7 +345,7 @@
       flex-shrink: 0;
     }
 
-    .phase-item-bar {
+    .section-item-bar {
       height: 4px;
       background: var(--border-light);
       border-radius: 2px;
@@ -356,16 +354,16 @@
       margin-bottom: 4px;
     }
 
-    .phase-item-bar .done { background: var(--status-done); transition: width 0.3s; }
-    .phase-item-bar .ongoing { background: var(--status-ongoing); transition: width 0.3s; }
-    .phase-item-bar .canceled { background: var(--status-canceled); transition: width 0.3s; }
+    .section-item-bar .done { background: var(--status-done); transition: width 0.3s; }
+    .section-item-bar .ongoing { background: var(--status-ongoing); transition: width 0.3s; }
+    .section-item-bar .canceled { background: var(--status-canceled); transition: width 0.3s; }
 
-    .phase-item-counts {
+    .section-item-counts {
       display: flex;
       gap: 8px;
     }
 
-    .phase-mini-stat {
+    .section-mini-stat {
       display: flex;
       align-items: center;
       gap: 3px;
@@ -373,7 +371,7 @@
       color: var(--text-muted);
     }
 
-    .phase-mini-stat .status-icon {
+    .section-mini-stat .status-icon {
       width: 12px;
       height: 12px;
       display: inline-flex;
@@ -381,12 +379,12 @@
       justify-content: center;
     }
 
-    .phase-mini-stat .status-icon svg {
+    .section-mini-stat .status-icon svg {
       width: 12px;
       height: 12px;
     }
 
-    .phase-item-goal {
+    .section-item-desc {
       font-size: 12px;
       line-height: 1.5;
       color: var(--text-muted);
@@ -400,7 +398,7 @@
       position: relative;
     }
 
-    .phase-item-goal::after {
+    .section-item-desc::after {
       content: '';
       position: absolute;
       bottom: 0; left: 0; right: 0;
@@ -408,24 +406,24 @@
       background: linear-gradient(transparent, rgba(255,255,255,0.5));
     }
 
-    .phase-item.active .phase-item-goal { display: block; }
+    .section-item.active .section-item-desc { display: block; }
 
-    .phase-item-actions {
+    .section-item-actions {
       display: none;
       margin-top: 6px;
       gap: 4px;
     }
 
-    .phase-item.active .phase-item-actions { display: flex; }
+    .section-item.active .section-item-actions { display: flex; }
 
-    .phase-item-actions button {
+    .section-item-actions button {
       font-size: 12px;
       padding: 3px 8px;
       background: transparent;
       border: 1px solid var(--border);
     }
 
-    .phase-item-actions button:hover {
+    .section-item-actions button:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -452,6 +450,38 @@
     }
 
     .status-column:last-child { border-right: none; }
+
+    .status-column-body {
+      overflow: hidden;
+      max-height: 5000px;
+      transition: max-height 0.35s ease, opacity 0.25s ease;
+      opacity: 1;
+    }
+    .status-column.collapsed .status-column-body {
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.3s ease, opacity 0.15s ease;
+    }
+
+    .col-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: none;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--font);
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .col-toggle-btn:hover { color: var(--text); background: var(--bg-warm); }
+    .col-toggle-btn svg { width: 12px; height: 12px; }
 
     .status-column-header {
       padding: 14px 16px;
@@ -510,12 +540,12 @@
       background: var(--accent-light);
     }
 
-    /* Phase section within a column */
-    .phase-section {
+    /* Section group within a column */
+    .section-group {
       margin-bottom: 12px;
     }
 
-    .phase-section-header {
+    .section-group-header {
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
@@ -608,6 +638,15 @@
     @keyframes shimmer {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
+    }
+
+    /* New card entrance animation */
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to { opacity: 1; transform: none; }
+    }
+    .card-enter {
+      animation: card-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
     .task-card-ac {
@@ -711,10 +750,20 @@
     }
 
     .drop-indicator {
+      height: 0;
+      position: relative;
+      pointer-events: none;
+    }
+
+    .drop-indicator::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -1px;
       height: 2.5px;
       background: var(--accent);
       border-radius: 2px;
-      margin: 3px 0;
     }
 
     /* ===== SESSION STATUS DOT ===== */
@@ -1019,17 +1068,19 @@
     .project-item {
       padding: 8px 10px;
       cursor: pointer;
-      transition: background 0.15s;
-      border-left: 3px solid transparent;
-      border-radius: 6px;
-      margin: 1px 0;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      margin: 2px 0;
     }
 
     .project-item:hover { background: var(--bg-warm); }
 
     .project-item.active {
-      background: var(--accent-light);
-      border-left-color: var(--accent);
+      background: var(--bg-card);
+      border-color: var(--border);
+      box-shadow: var(--shadow-sm);
+      cursor: default;
     }
 
     .project-item-header {
@@ -1073,6 +1124,13 @@
     .project-expanded {
       padding-top: 8px;
     }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+    .project-expanded.animate-enter {
+      animation: fade-up 0.3s ease both;
+    }
   </style>
 </head>
 <body>
@@ -1115,7 +1173,7 @@
       <div class="sidebar-card scrollable borderless" id="projectListCard">
         <div class="sidebar-card-header">
           <div class="sidebar-card-title">Projects</div>
-          <button class="add-phase-btn" id="addPhaseBtn" title="Add Section">+</button>
+          <button class="add-section-btn" id="addSectionBtn" title="Add Section">+</button>
         </div>
         <div class="project-list" id="projectList"></div>
       </div>
@@ -1163,11 +1221,12 @@
     let projectId = window.__projectId || null;
     let allProjects = []; // cached project list from /api/projects
     let preamble = '';
-    let phases = [];
+    let sections = [];
     let hasChanges = false;
     let isSaving = false;
-    let activePhaseId = null; // selected phase in sidebar, null = show all
+    let activeSectionId = null; // selected section in sidebar, null = show all
     let sessionMap = {}; // customTitle → { sessionId, status, summary }
+    let hideDone = localStorage.getItem('octask-hide-done') !== 'false';
 
     // Undo stack — stores snapshots taken before each mutation
     const undoStack = [];
@@ -1175,7 +1234,7 @@
     let lastCleanSnapshot = null;
 
     function takeSnapshot() {
-      return JSON.parse(JSON.stringify(phases));
+      return JSON.parse(JSON.stringify(sections));
     }
 
     // Call this before any mutation to save the pre-mutation state
@@ -1187,7 +1246,7 @@
 
     function undo() {
       if (undoStack.length === 0) { showStatus('Nothing to undo'); return; }
-      phases = undoStack.pop();
+      sections = undoStack.pop();
       lastCleanSnapshot = takeSnapshot();
       hasChanges = true;
       $('saveBtn').disabled = false;
@@ -1257,7 +1316,7 @@
 
     function makeId(name) {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      return slug || ('phase-' + uid());
+      return slug || ('section-' + uid());
     }
 
     function uid() { return Date.now() + Math.random(); }
@@ -1295,37 +1354,40 @@
     function parseTasksMd(content) {
       const result = [];
       let pre = '';
-      let currentPhase = null;
+      const defaultSection = { id: '__default', name: '', description: '', tasks: [] };
+      let currentSection = defaultSection;
       let currentTask = null;
-      let inGoal = false;
-      let goalLines = [];
+      let inDesc = false;
+      let descSectionLines = [];
       let descLines = [];
+      let seenSection = false;
 
       for (const line of content.split('\n')) {
-        const phaseMatch = line.match(/^## (.+)$/);
-        if (phaseMatch) {
-          if (currentTask && currentPhase) { flushTask(currentTask, descLines); currentPhase.tasks.push(currentTask); currentTask = null; descLines = []; }
-          if (currentPhase && inGoal) { currentPhase.goal = goalLines.join(' ').trim(); inGoal = false; goalLines = []; }
-          const name = phaseMatch[1].trim();
-          currentPhase = { id: makeId(name), name, goal: '', tasks: [] };
-          result.push(currentPhase);
+        const sectionMatch = line.match(/^## (.+)$/);
+        if (sectionMatch) {
+          if (currentTask) { flushTask(currentTask, descLines); currentSection.tasks.push(currentTask); currentTask = null; descLines = []; }
+          if (inDesc) { currentSection.description = descSectionLines.join(' ').trim(); inDesc = false; descSectionLines = []; }
+          const name = sectionMatch[1].trim();
+          currentSection = { id: makeId(name), name, description: '', tasks: [] };
+          result.push(currentSection);
+          seenSection = true;
           continue;
         }
 
-        if (currentPhase && !currentTask) {
-          const goalStart = line.match(/^Goal:\s*(.*)$/);
-          if (goalStart) { inGoal = true; goalLines = [goalStart[1]]; continue; }
-          if (inGoal) {
-            if (line.trim() === '' && goalLines.length > 0) { currentPhase.goal = goalLines.join(' ').trim(); inGoal = false; goalLines = []; continue; }
-            goalLines.push(line.trim());
+        if (currentSection && !currentTask) {
+          const descStart = line.match(/^Description:\s*(.*)$/);
+          if (descStart) { inDesc = true; descSectionLines = [descStart[1]]; continue; }
+          if (inDesc) {
+            if (line.trim() === '' && descSectionLines.length > 0) { currentSection.description = descSectionLines.join(' ').trim(); inDesc = false; descSectionLines = []; continue; }
+            descSectionLines.push(line.trim());
             continue;
           }
         }
 
         const taskMatch = line.match(/^- \[([ xX\/\-])\]\s*(.*)$/);
-        if (taskMatch && currentPhase) {
-          if (inGoal) { currentPhase.goal = goalLines.join(' ').trim(); inGoal = false; goalLines = []; }
-          if (currentTask) { flushTask(currentTask, descLines); currentPhase.tasks.push(currentTask); descLines = []; }
+        if (taskMatch) {
+          if (inDesc) { currentSection.description = descSectionLines.join(' ').trim(); inDesc = false; descSectionLines = []; }
+          if (currentTask) { flushTask(currentTask, descLines); currentSection.tasks.push(currentTask); descLines = []; }
           const sym = taskMatch[1];
           let status = 'todo';
           if (sym === 'x' || sym === 'X') status = 'done';
@@ -1335,7 +1397,7 @@
           const slugMatch = rawTitle.match(/^(.+?)\s+#([\w-]+)$/);
           const titleText = slugMatch ? slugMatch[1].trim() : rawTitle;
           const slug = slugMatch ? slugMatch[2] : '';
-          currentTask = { id: uid(), title: titleText, slug, desc: '', ac: '', status, phaseId: currentPhase.id };
+          currentTask = { id: uid(), title: titleText, slug, desc: '', ac: '', status, sectionId: currentSection.id };
           descLines = [];
           continue;
         }
@@ -1347,18 +1409,22 @@
 
         if (currentTask && line.trim() === '') continue;
 
-        if (currentTask && currentPhase && line.trim() !== '') {
+        if (currentTask && line.trim() !== '') {
           flushTask(currentTask, descLines);
-          currentPhase.tasks.push(currentTask);
+          currentSection.tasks.push(currentTask);
           currentTask = null;
           descLines = [];
         }
 
-        if (!currentPhase) pre += line + '\n';
+        if (!seenSection && !currentTask && defaultSection.tasks.length === 0) pre += line + '\n';
       }
 
-      if (inGoal && currentPhase) currentPhase.goal = goalLines.join(' ').trim();
-      if (currentTask && currentPhase) { flushTask(currentTask, descLines); currentPhase.tasks.push(currentTask); }
+      if (inDesc && currentSection) currentSection.description = descSectionLines.join(' ').trim();
+      if (currentTask) { flushTask(currentTask, descLines); currentSection.tasks.push(currentTask); }
+
+      if (defaultSection.tasks.length > 0) {
+        result.unshift(defaultSection);
+      }
 
       preamble = pre;
       return result;
@@ -1378,10 +1444,12 @@
     // ===== SERIALIZE =====
     function toMarkdown() {
       let md = preamble;
-      phases.forEach(phase => {
-        md += `## ${phase.name}\n\n`;
-        if (phase.goal) md += `Goal: ${phase.goal}\n\n`;
-        phase.tasks.forEach(t => {
+      sections.forEach(section => {
+        if (section.name) {
+          md += `## ${section.name}\n\n`;
+          if (section.description) md += `Description: ${section.description}\n\n`;
+        }
+        section.tasks.forEach(t => {
           md += `- ${STATUS_SYMBOLS[t.status] || '[ ]'} ${t.title}${t.slug ? ' #' + t.slug : ''}\n`;
           if (t.desc) t.desc.split('\n').forEach(l => { md += `    ${l}\n`; });
           if (t.ac) md += `    AC: ${t.ac}\n`;
@@ -1391,7 +1459,7 @@
     }
 
     // ===== STATS =====
-    function allTasks() { return phases.flatMap(p => p.tasks); }
+    function allTasks() { return sections.flatMap(s => s.tasks); }
 
     function countByStatus(tasks) {
       const c = { todo: 0, ongoing: 0, done: 0, canceled: 0 };
@@ -1433,21 +1501,22 @@
       document.querySelectorAll('.task-card').forEach(c => {
         oldRects.set('c-' + c.dataset.taskId, c.getBoundingClientRect());
       });
-      document.querySelectorAll('.phase-section-header').forEach(h => {
+      document.querySelectorAll('.section-group-header').forEach(h => {
         oldRects.set('h-' + colIdx(h) + '-' + h.textContent.trim(), h.getBoundingClientRect());
       });
       render();
-      const spring = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+      const spring = 'cubic-bezier(0.22, 1, 0.36, 1)';
       document.querySelectorAll('.task-card').forEach(c => {
         if (skipTaskId != null && c.dataset.taskId === String(skipTaskId)) return;
         const old = oldRects.get('c-' + c.dataset.taskId);
         if (old) flipAnimate(c, old, spring);
       });
-      document.querySelectorAll('.phase-section-header').forEach(h => {
+      document.querySelectorAll('.section-group-header').forEach(h => {
         const old = oldRects.get('h-' + colIdx(h) + '-' + h.textContent.trim());
         if (old) flipAnimate(h, old, spring);
       });
     }
+
 
     function renderProjectList() {
       const list = $('projectList');
@@ -1473,15 +1542,9 @@
         `;
 
         if (isActive) {
-          // Add expanded content for active project — globalStats/globalBar/globalPct/phaseList
-          // will be filled in by the rest of renderSidebar()
           html += `<div class="project-expanded">
             <div class="global-stats" id="globalStats"></div>
-            <div class="global-progress">
-              <div class="global-progress-bar" id="globalBar"></div>
-              <span class="global-pct" id="globalPct">0%</span>
-            </div>
-            <div class="phase-list" id="phaseList"></div>
+            <div class="section-list" id="sectionList"></div>
           </div>`;
         }
 
@@ -1498,110 +1561,106 @@
     function renderSidebar() {
       renderProjectList();
 
-      const all = allTasks();
-      const counts = countByStatus(all);
-      const total = all.length;
-
       // Global stats (inside active project's expanded area)
       const globalStatsEl = $('globalStats');
-      if (!globalStatsEl) return; // no active project expanded area yet
+      if (!globalStatsEl) return;
+      const all = allTasks();
+      const counts = countByStatus(all);
       globalStatsEl.innerHTML = STATUS_ORDER.map(st =>
         `<div class="global-stat">${statusIcon(st)}<span class="num">${counts[st]}</span></div>`
       ).join('');
 
-      // Global progress
-      if (total > 0) {
-        $('globalBar').innerHTML = `
-          <div class="done" style="width:${(counts.done/total)*100}%"></div>
-          <div class="ongoing" style="width:${(counts.ongoing/total)*100}%"></div>
-        `;
-      } else {
-        $('globalBar').innerHTML = '';
-      }
-      $('globalPct').textContent = pctDone(all) + '%';
-
-      // Phase list
-      const list = $('phaseList');
+      // Section list
+      const list = $('sectionList');
       list.innerHTML = '';
 
-      phases.forEach(phase => {
-        const stats = countByStatus(phase.tasks);
-        const total = phase.tasks.length;
-        const isActive = activePhaseId === phase.id;
+      if (sections.some(s => s.name)) {
+        sections.forEach(section => {
+          if (!section.name) return; // skip unnamed default section in list
+          const stats = countByStatus(section.tasks);
+          const total = section.tasks.length;
+          const isActive = activeSectionId === section.id;
 
-        const item = document.createElement('div');
-        item.className = `phase-item ${isActive ? 'active' : ''}`;
+          const item = document.createElement('div');
+          item.className = `section-item ${isActive ? 'active' : ''}`;
 
-        item.innerHTML = `
-          <div class="phase-item-header">
-            <span class="phase-item-name">${escapeHtml(phase.name)}</span>
-            <span class="phase-item-count">${total}</span>
-          </div>
-          <div class="phase-item-bar">
-            ${total > 0 ? `
-              <div class="done" style="width:${(stats.done/total)*100}%"></div>
-              <div class="ongoing" style="width:${(stats.ongoing/total)*100}%"></div>
-            ` : ''}
-          </div>
-          <div class="phase-item-counts">
-            ${STATUS_ORDER.filter(st => stats[st] > 0).map(st =>
-              `<span class="phase-mini-stat">${statusIcon(st)}${stats[st]}</span>`
-            ).join('')}
-          </div>
-          ${phase.goal ? `<div class="phase-item-goal">${escapeHtml(phase.goal)}</div>` : ''}
-          <div class="phase-item-actions">
-            <button data-action="edit-phase">Edit</button>
-            <button data-action="delete-phase">Delete</button>
-          </div>
-        `;
+          item.innerHTML = `
+            <div class="section-item-header">
+              <span class="section-item-name">${escapeHtml(section.name)}</span>
+              <span class="section-item-count">${total}</span>
+            </div>
+            <div class="section-item-bar">
+              ${total > 0 ? `
+                <div class="done" style="width:${(stats.done/total)*100}%"></div>
+                <div class="ongoing" style="width:${(stats.ongoing/total)*100}%"></div>
+              ` : ''}
+            </div>
+            <div class="section-item-counts">
+              ${STATUS_ORDER.filter(st => stats[st] > 0).map(st =>
+                `<span class="section-mini-stat">${statusIcon(st)}${stats[st]}</span>`
+              ).join('')}
+            </div>
+            ${section.description ? `<div class="section-item-desc">${escapeHtml(section.description)}</div>` : ''}
+            <div class="section-item-actions">
+              <button data-action="edit-section">Edit</button>
+              <button data-action="delete-section">Delete</button>
+            </div>
+          `;
 
-        item.addEventListener('click', (e) => {
-          if (e.target.closest('[data-action]')) return;
-          activePhaseId = isActive ? null : phase.id;
-          render();
+          item.addEventListener('click', (e) => {
+            if (e.target.closest('[data-action]')) return;
+            activeSectionId = isActive ? null : section.id;
+            render();
+          });
+
+          item.querySelector('[data-action="edit-section"]')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editSectionModal(section);
+          });
+
+          item.querySelector('[data-action="delete-section"]')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (section.tasks.length > 0) {
+              showStatus('Cannot delete a section with tasks');
+              return;
+            }
+            sections = sections.filter(s => s.id !== section.id);
+            if (activeSectionId === section.id) activeSectionId = null;
+            markChanged();
+            render();
+          });
+
+          list.appendChild(item);
         });
-
-        item.querySelector('[data-action="edit-phase"]')?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          editPhaseModal(phase);
-        });
-
-        item.querySelector('[data-action="delete-phase"]')?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (phase.tasks.length > 0) {
-            showStatus('Cannot delete a phase with tasks');
-            return;
-          }
-          phases = phases.filter(p => p.id !== phase.id);
-          if (activePhaseId === phase.id) activePhaseId = null;
-          markChanged();
-          render();
-        });
-
-        list.appendChild(item);
-      });
+      }
     }
 
     function renderBoard() {
       const board = $('boardArea');
       board.innerHTML = '';
 
-      // Determine which phases to show
-      const visiblePhases = activePhaseId ? phases.filter(p => p.id === activePhaseId) : phases;
+      // Determine which sections to show
+      const visibleSections = activeSectionId ? sections.filter(s => s.id === activeSectionId) : sections;
+      const hasMultipleNamedSections = sections.filter(s => s.name).length > 1 || (sections.some(s => s.name) && sections.some(s => !s.name));
 
       STATUS_ORDER.forEach(status => {
         const col = document.createElement('div');
         col.className = 'status-column';
         col.dataset.status = status;
 
-        // Gather tasks for this status across visible phases (always include all phases)
+        // Gather tasks for this status across visible sections
         let totalCount = 0;
-        const phaseGroups = [];
-        visiblePhases.forEach(phase => {
-          const tasks = phase.tasks.filter(t => t.status === status);
-          phaseGroups.push({ phase, tasks });
+        const sectionGroups = [];
+        visibleSections.forEach(section => {
+          const tasks = section.tasks.filter(t => t.status === status);
+          sectionGroups.push({ section, tasks });
           totalCount += tasks.length;
         });
+
+        // Done column: collapsed state (hides body, keeps header with toggle)
+        if (status === 'done' && hideDone) {
+          col.classList.add('collapsed');
+        }
 
         // Header
         const header = document.createElement('div');
@@ -1611,6 +1670,29 @@
           <span class="status-column-name">${STATUS_LABELS[status]}</span>
           <span class="status-column-count">${totalCount}</span>
         `;
+
+        // Done column: add toggle button (always visible)
+        if (status === 'done') {
+          const toggleBtn = document.createElement('button');
+          toggleBtn.className = 'col-toggle-btn';
+          if (hideDone) {
+            toggleBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>Show';
+          } else {
+            toggleBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="13" x2="13" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Hide';
+          }
+          const showSvg = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>Show';
+          const hideSvg = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="13" x2="13" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Hide';
+          toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideDone = !hideDone;
+            localStorage.setItem('octask-hide-done', String(hideDone));
+            const doneCol = toggleBtn.closest('.status-column');
+            doneCol.classList.toggle('collapsed', hideDone);
+            toggleBtn.innerHTML = hideDone ? showSvg : hideSvg;
+          });
+          header.appendChild(toggleBtn);
+        }
+
         col.appendChild(header);
 
         // Body
@@ -1618,27 +1700,27 @@
         body.className = 'status-column-body';
         body.dataset.status = status;
 
-        phaseGroups.forEach(({ phase, tasks }) => {
-          const section = document.createElement('div');
-          section.className = 'phase-section';
-          section.dataset.phaseId = phase.id;
+        sectionGroups.forEach(({ section, tasks }) => {
+          const sectionEl = document.createElement('div');
+          sectionEl.className = 'section-group';
+          sectionEl.dataset.sectionId = section.id;
 
-          // Phase section header (only show if more than 1 visible phase)
-          if (visiblePhases.length > 1) {
+          // Section header (only show for named sections when there are multiple)
+          if (section.name && (visibleSections.length > 1 || hasMultipleNamedSections)) {
             const sHeader = document.createElement('div');
-            sHeader.className = 'phase-section-header';
-            sHeader.textContent = phase.name;
-            section.appendChild(sHeader);
+            sHeader.className = 'section-group-header';
+            sHeader.textContent = section.name;
+            sectionEl.appendChild(sHeader);
           }
 
           tasks.forEach(task => {
-            section.appendChild(createTaskCard(task, phase));
+            sectionEl.appendChild(createTaskCard(task, section));
           });
 
-          body.appendChild(section);
+          body.appendChild(sectionEl);
         });
 
-        // If only 1 phase visible and column is empty, or "all" with no tasks, still show drop zone
+        // Still show drop zone even when empty
         setupColumnDropZone(body, status);
 
         col.appendChild(body);
@@ -1646,12 +1728,12 @@
       });
     }
 
-    function createTaskCard(task, phase) {
+    function createTaskCard(task, section) {
       const card = document.createElement('div');
       card.className = 'task-card';
       card.draggable = true;
       card.dataset.taskId = task.id;
-      card.dataset.phaseId = phase.id;
+      card.dataset.sectionId = section.id;
 
       // Actions
       const actions = document.createElement('div');
@@ -1687,7 +1769,7 @@
       const delBtn = document.createElement('button');
       delBtn.innerHTML = '<i data-lucide="x"></i>';
       delBtn.title = 'Delete';
-      delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteTask(task, phase); });
+      delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteTask(task, section); });
       actions.appendChild(delBtn);
       card.appendChild(actions);
 
@@ -1695,7 +1777,7 @@
       const title = document.createElement('div');
       title.className = `task-card-title ${task.status === 'done' ? 'crossed' : ''}`;
       title.textContent = task.title;
-      title.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, phase); });
+      title.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
       card.appendChild(title);
 
       // Description
@@ -1703,7 +1785,7 @@
         const desc = document.createElement('div');
         desc.className = 'task-card-desc';
         desc.textContent = task.desc;
-        desc.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, phase); });
+        desc.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
         card.appendChild(desc);
       }
 
@@ -1712,7 +1794,7 @@
         const ac = document.createElement('div');
         ac.className = 'task-card-ac';
         ac.innerHTML = `<span class="ac-label">AC</span>${escapeHtml(task.ac)}`;
-        ac.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, phase); });
+        ac.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
         card.appendChild(ac);
       }
 
@@ -1745,7 +1827,7 @@
       // Drag
       card.addEventListener('dragstart', (e) => {
         card.classList.add('dragging');
-        e.dataTransfer.setData('application/json', JSON.stringify({ taskId: task.id, phaseId: phase.id, fromStatus: task.status }));
+        e.dataTransfer.setData('application/json', JSON.stringify({ taskId: task.id, sectionId: section.id, fromStatus: task.status }));
         e.dataTransfer.effectAllowed = 'move';
       });
       card.addEventListener('dragend', () => {
@@ -1766,17 +1848,26 @@
         body.querySelectorAll('.drop-indicator').forEach(el => el.remove());
         const cards = [...body.querySelectorAll('.task-card:not(.dragging)')];
 
-        // Find which phase section the cursor is over
-        const sections = [...body.querySelectorAll('.phase-section')];
-        let targetSection = null;
-        for (const s of sections) {
+        // Find which section group the cursor is over
+        const sectionEls = [...body.querySelectorAll('.section-group')];
+        let dropTarget = null;
+        for (const s of sectionEls) {
           const r = s.getBoundingClientRect();
-          if (e.clientY >= r.top && e.clientY <= r.bottom) { targetSection = s; break; }
+          if (e.clientY >= r.top && e.clientY <= r.bottom) { dropTarget = s; break; }
+        }
+
+        // If above the first section group, mark as "drop to unsectioned"
+        let dropToDefault = false;
+        if (!dropTarget && sectionEls.length > 0) {
+          const firstEl = sectionEls[0];
+          if (e.clientY < firstEl.getBoundingClientRect().top) {
+            dropToDefault = true;
+          }
         }
 
         // Find card to insert before (only within the target section if known)
-        const searchCards = targetSection
-          ? cards.filter(c => targetSection.contains(c))
+        const searchCards = dropTarget
+          ? cards.filter(c => dropTarget.contains(c))
           : cards;
         let insertBefore = null;
         for (const c of searchCards) {
@@ -1786,10 +1877,12 @@
 
         const indicator = document.createElement('div');
         indicator.className = 'drop-indicator';
-        if (insertBefore) {
+        if (dropToDefault) {
+          body.prepend(indicator);
+        } else if (insertBefore) {
           insertBefore.before(indicator);
-        } else if (targetSection) {
-          targetSection.appendChild(indicator);
+        } else if (dropTarget) {
+          dropTarget.appendChild(indicator);
         } else {
           body.appendChild(indicator);
         }
@@ -1809,26 +1902,35 @@
 
         try {
           const data = JSON.parse(e.dataTransfer.getData('application/json'));
-          const srcPhase = phases.find(p => p.id === data.phaseId);
-          if (!srcPhase) return;
-          const taskIdx = srcPhase.tasks.findIndex(t => t.id == data.taskId);
+          const srcSection = sections.find(s => s.id === data.sectionId);
+          if (!srcSection) return;
+          const taskIdx = srcSection.tasks.findIndex(t => t.id == data.taskId);
           if (taskIdx === -1) return;
-          const task = srcPhase.tasks[taskIdx];
+          const task = srcSection.tasks[taskIdx];
 
           // Update status to match target column
           task.status = status;
 
-          // Find position: which phase section and card to insert before
+          // Find position: which section group and card to insert before
           const cards = [...body.querySelectorAll('.task-card:not(.dragging)')];
-          const sections = [...body.querySelectorAll('.phase-section')];
-          let targetSection = null;
-          for (const s of sections) {
+          const sectionEls = [...body.querySelectorAll('.section-group')];
+          let dropTarget = null;
+          for (const s of sectionEls) {
             const r = s.getBoundingClientRect();
-            if (e.clientY >= r.top && e.clientY <= r.bottom) { targetSection = s; break; }
+            if (e.clientY >= r.top && e.clientY <= r.bottom) { dropTarget = s; break; }
           }
 
-          const searchCards = targetSection
-            ? cards.filter(c => targetSection.contains(c))
+          // If above the first section group, drop into default (unsectioned) area
+          let dropToDefault = false;
+          if (!dropTarget && sectionEls.length > 0) {
+            const firstEl = sectionEls[0];
+            if (e.clientY < firstEl.getBoundingClientRect().top) {
+              dropToDefault = true;
+            }
+          }
+
+          const searchCards = dropTarget
+            ? cards.filter(c => dropTarget.contains(c))
             : cards;
           let beforeCard = null;
           for (const c of searchCards) {
@@ -1836,32 +1938,44 @@
             if (e.clientY < r.top + r.height / 2) { beforeCard = c; break; }
           }
 
-          // Remove from source phase
-          srcPhase.tasks.splice(taskIdx, 1);
+          // Remove from source section
+          srcSection.tasks.splice(taskIdx, 1);
 
-          if (beforeCard) {
-            const bPhaseId = beforeCard.dataset.phaseId;
+          // Helper: get or create the default section
+          function getDefaultSection() {
+            let def = sections.find(s => s.id === '__default');
+            if (!def) {
+              def = { id: '__default', name: '', description: '', tasks: [] };
+              sections.unshift(def);
+            }
+            return def;
+          }
+
+          if (dropToDefault) {
+            getDefaultSection().tasks.push(task);
+          } else if (beforeCard) {
+            const bSectionId = beforeCard.dataset.sectionId;
             const bTaskId = parseFloat(beforeCard.dataset.taskId);
-            const dstPhase = phases.find(p => p.id === bPhaseId);
-            if (dstPhase) {
-              const bIdx = dstPhase.tasks.findIndex(t => t.id == bTaskId);
+            const dstSection = sections.find(s => s.id === bSectionId);
+            if (dstSection) {
+              const bIdx = dstSection.tasks.findIndex(t => t.id == bTaskId);
               if (bIdx !== -1) {
-                dstPhase.tasks.splice(bIdx, 0, task);
+                dstSection.tasks.splice(bIdx, 0, task);
               } else {
-                dstPhase.tasks.push(task);
+                dstSection.tasks.push(task);
               }
             } else {
-              srcPhase.tasks.push(task);
+              srcSection.tasks.push(task);
             }
-          } else if (targetSection) {
-            const dstPhase = phases.find(p => p.id === targetSection.dataset.phaseId);
-            if (dstPhase) {
-              dstPhase.tasks.push(task);
+          } else if (dropTarget) {
+            const dstSection = sections.find(s => s.id === dropTarget.dataset.sectionId);
+            if (dstSection) {
+              dstSection.tasks.push(task);
             } else {
-              srcPhase.tasks.push(task);
+              srcSection.tasks.push(task);
             }
           } else {
-            srcPhase.tasks.push(task);
+            srcSection.tasks.push(task);
           }
 
           markChanged();
@@ -1871,10 +1985,10 @@
     }
 
     // ===== TASK OPERATIONS =====
-    function deleteTask(task, phase) {
-      const idx = phase.tasks.findIndex(t => t.id === task.id);
+    function deleteTask(task, section) {
+      const idx = section.tasks.findIndex(t => t.id === task.id);
       if (idx !== -1) {
-        phase.tasks.splice(idx, 1);
+        section.tasks.splice(idx, 1);
         markChanged();
         render();
       }
@@ -1900,7 +2014,8 @@
     $('modalSave').addEventListener('click', () => { if (modalSaveCallback) modalSaveCallback(); closeModal(); });
     $('modalOverlay').addEventListener('click', (e) => { if (e.target === $('modalOverlay')) closeModal(); });
 
-    function openNewTaskModal(phase, defaultStatus = 'todo') {
+    function openNewTaskModal(section, defaultStatus = 'todo') {
+      const hasNamedSections = sections.some(s => s.name);
       openModal('New Task', `
         <div class="form-group">
           <label>Title</label>
@@ -1910,12 +2025,14 @@
           <label>ID</label>
           <input type="text" id="mSlug" style="font-family:var(--mono);font-size:13px" placeholder="e.g. fix-auth-bug">
         </div>
+        ${hasNamedSections ? `
         <div class="form-group">
-          <label>Phase</label>
-          <select id="mPhase">
-            ${phases.map(p => `<option value="${p.id}" ${p.id === phase.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+          <label>Section</label>
+          <select id="mSection">
+            ${sections.filter(s => s.name).map(s => `<option value="${s.id}" ${s.id === section.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
           </select>
         </div>
+        ` : ''}
         <div class="form-group">
           <label>Status</label>
           <div class="status-select-row" id="mStatusRow">
@@ -1938,16 +2055,16 @@
       `, () => {
         const title = $('mTitle').value.trim();
         if (!title) return;
-        const selPhase = phases.find(p => p.id === $('mPhase').value) || phase;
+        const selSection = (hasNamedSections && $('mSection')) ? (sections.find(s => s.id === $('mSection').value) || section) : section;
         const selStatus = document.querySelector('#mStatusRow .status-option.selected');
-        selPhase.tasks.push({
+        selSection.tasks.push({
           id: uid(),
           title,
           slug: $('mSlug').value.trim().replace(/^#/, ''),
           desc: $('mDesc').value.trim(),
           ac: $('mAc').value.trim(),
           status: selStatus ? selStatus.dataset.status : defaultStatus,
-          phaseId: selPhase.id
+          sectionId: selSection.id
         });
         markChanged();
         render();
@@ -1956,7 +2073,8 @@
       setTimeout(() => $('mTitle').focus(), 50);
     }
 
-    function openEditTaskModal(task, phase) {
+    function openEditTaskModal(task, section) {
+      const hasNamedSections = sections.some(s => s.name);
       openModal('Edit Task', `
         <div class="form-group">
           <label>Title</label>
@@ -1971,12 +2089,14 @@
             <input type="text" id="mSlug" value="${escapeAttr(task.slug || '')}" style="flex:1;font-family:var(--mono);font-size:13px" placeholder="e.g. fix-auth-bug">
           </div>
         </div>
+        ${hasNamedSections ? `
         <div class="form-group">
-          <label>Phase</label>
-          <select id="mPhase">
-            ${phases.map(p => `<option value="${p.id}" ${p.id === phase.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+          <label>Section</label>
+          <select id="mSection">
+            ${sections.filter(s => s.name).map(s => `<option value="${s.id}" ${s.id === section.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
           </select>
         </div>
+        ` : ''}
         <div class="form-group">
           <label>Status</label>
           <div class="status-select-row" id="mStatusRow">
@@ -2006,13 +2126,15 @@
         task.desc = $('mDesc').value.trim();
         task.ac = $('mAc').value.trim();
 
-        // Handle phase move
-        const newPhaseId = $('mPhase').value;
-        if (newPhaseId !== phase.id) {
-          const idx = phase.tasks.findIndex(t => t.id === task.id);
-          if (idx !== -1) phase.tasks.splice(idx, 1);
-          const newPhase = phases.find(p => p.id === newPhaseId);
-          if (newPhase) newPhase.tasks.push(task);
+        // Handle section move
+        if (hasNamedSections && $('mSection')) {
+          const newSectionId = $('mSection').value;
+          if (newSectionId !== section.id) {
+            const idx = section.tasks.findIndex(t => t.id === task.id);
+            if (idx !== -1) section.tasks.splice(idx, 1);
+            const newSection = sections.find(s => s.id === newSectionId);
+            if (newSection) newSection.tasks.push(task);
+          }
         }
 
         markChanged();
@@ -2031,24 +2153,24 @@
       setTimeout(() => $('mTitle').focus(), 50);
     }
 
-    function editPhaseModal(phase) {
-      openModal('Edit Phase', `
+    function editSectionModal(section) {
+      openModal('Edit Section', `
         <div class="form-group">
-          <label>Phase Name</label>
-          <input type="text" id="mPhaseName" value="${escapeAttr(phase.name)}">
+          <label>Section Name</label>
+          <input type="text" id="mSectionName" value="${escapeAttr(section.name)}">
         </div>
         <div class="form-group">
-          <label>Goal</label>
-          <textarea id="mPhaseGoal" rows="4">${escapeHtml(phase.goal)}</textarea>
+          <label>Description</label>
+          <textarea id="mSectionDesc" rows="4">${escapeHtml(section.description)}</textarea>
         </div>
       `, () => {
-        const name = $('mPhaseName').value.trim();
-        if (name) { phase.name = name; phase.id = makeId(name); }
-        phase.goal = $('mPhaseGoal').value.trim();
+        const name = $('mSectionName').value.trim();
+        if (name) { section.name = name; section.id = makeId(name); }
+        section.description = $('mSectionDesc').value.trim();
         markChanged();
         render();
       });
-      setTimeout(() => $('mPhaseName').focus(), 50);
+      setTimeout(() => $('mSectionName').focus(), 50);
     }
 
     function setupStatusRow() {
@@ -2062,29 +2184,29 @@
 
     // ===== GLOBAL ADD TASK =====
     $('globalAddTaskBtn').addEventListener('click', () => {
-      if (!phases.length) return;
-      openNewTaskModal(phases[0], 'canceled');
+      if (!sections.length) return;
+      openNewTaskModal(sections[0], 'canceled');
     });
 
-    // ===== ADD PHASE =====
-    $('addPhaseBtn').addEventListener('click', () => {
-      openModal('New Phase', `
+    // ===== ADD SECTION =====
+    $('addSectionBtn').addEventListener('click', () => {
+      openModal('New Section', `
         <div class="form-group">
-          <label>Phase Name</label>
-          <input type="text" id="mPhaseName" placeholder="Phase N: Name">
+          <label>Section Name</label>
+          <input type="text" id="mSectionName" placeholder="Section name">
         </div>
         <div class="form-group">
-          <label>Goal</label>
-          <textarea id="mPhaseGoal" placeholder="What does 'done enough' look like for this phase?" rows="3"></textarea>
+          <label>Description</label>
+          <textarea id="mSectionDesc" placeholder="Optional description for this section" rows="3"></textarea>
         </div>
       `, () => {
-        const name = $('mPhaseName').value.trim();
+        const name = $('mSectionName').value.trim();
         if (!name) return;
-        phases.push({ id: makeId(name), name, goal: $('mPhaseGoal').value.trim(), tasks: [] });
+        sections.push({ id: makeId(name), name, description: $('mSectionDesc').value.trim(), tasks: [] });
         markChanged();
         render();
       });
-      setTimeout(() => $('mPhaseName').focus(), 50);
+      setTimeout(() => $('mSectionName').focus(), 50);
     });
 
     // ===== API I/O =====
@@ -2200,7 +2322,7 @@
       } catch {}
     }
 
-    async function loadProject({ silent = false } = {}) {
+    async function loadProject({ silent = false, skipRender = false } = {}) {
       if (!projectId) return;
       try {
         const res = await fetch(`/api/tasks/${encodeURIComponent(projectId)}`);
@@ -2217,14 +2339,11 @@
           throw new Error('TASKS.md has invalid format: ' + parseErr.message);
         }
 
-        if (parsed.length === 0 && (data.content || '').trim().length > 0) {
-          showStatus('Warning: no phases found — file may have unexpected format', true);
-        }
+        const oldSlugs = silent ? new Set(sections.flatMap(s => s.tasks).map(t => t.slug).filter(Boolean)) : null;
+        sections = parsed;
 
-        phases = parsed;
-
-        // Update allProjects entry with accurate stats from parsed phases
-        const allParsed = phases.flatMap(p => p.tasks);
+        // Update allProjects entry with accurate stats from parsed sections
+        const allParsed = sections.flatMap(p => p.tasks);
         const parsedCounts = countByStatus(allParsed);
         const activeEntry = allProjects.find(p => p.id === projectId);
         if (activeEntry) {
@@ -2243,9 +2362,30 @@
 
         lastCleanSnapshot = takeSnapshot();
         undoStack.length = 0;
-        render();
+        if (!skipRender) {
+          if (silent) {
+            // Find tasks added since last load (by slug)
+            const addedIds = new Set();
+            for (const s of sections) {
+              for (const t of s.tasks) {
+                if (t.slug && !oldSlugs.has(t.slug)) addedIds.add(String(t.id));
+              }
+            }
+            animatedRender();
+            if (addedIds.size) {
+              document.querySelectorAll('.task-card').forEach(c => {
+                if (addedIds.has(c.dataset.taskId)) {
+                  c.classList.add('card-enter');
+                  c.addEventListener('animationend', () => c.classList.remove('card-enter'), { once: true });
+                }
+              });
+            }
+          } else {
+            render();
+          }
+          if (!silent) showStatus('Loaded');
+        }
         fetchUsage();
-        if (!silent) showStatus('Loaded');
       } catch (e) {
         const isNetworkError = e.message === 'Failed to fetch' || e.name === 'TypeError';
         $('emptyState').querySelector('h2').textContent = isNetworkError ? 'Connection Failed' : 'Error';
@@ -2306,17 +2446,22 @@
     async function switchProject(newProjectId) {
       if (newProjectId === projectId) return;
 
+      // Capture old project-item positions for FLIP animation
+      const oldProjRects = new Map();
+      document.querySelectorAll('.project-item').forEach((el, i) => {
+        oldProjRects.set(i, el.getBoundingClientRect());
+      });
+
       // Disconnect old SSE watcher
       if (fileWatchSource) { fileWatchSource.close(); fileWatchSource = null; }
 
-      // Reset state
+      // Reset state (keep sessionMap — old data won't hurt, avoids flash)
       projectId = newProjectId;
-      phases = [];
+      sections = [];
       preamble = '';
       hasChanges = false;
       isSaving = false;
-      activePhaseId = null;
-      sessionMap = {};
+      activeSectionId = null;
       undoStack.length = 0;
       lastCleanSnapshot = null;
       $('saveBtn').disabled = true;
@@ -2324,9 +2469,27 @@
       // Update URL
       history.pushState({}, '', '/project/' + encodeURIComponent(newProjectId));
 
-      // Load new project
-      await loadProject();
-      fetchSessions().then(render);
+      // Wait for BOTH tasks and sessions before rendering — no flash
+      await Promise.all([
+        loadProject({ skipRender: true }),
+        fetchSessions(),
+      ]);
+      render();
+
+      // FLIP animate project items in sidebar
+      const ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
+      document.querySelectorAll('.project-item').forEach((el, i) => {
+        const old = oldProjRects.get(i);
+        if (old) flipAnimate(el, old, ease);
+      });
+
+      // Animate the newly expanded project panel
+      const expanded = document.querySelector('.project-expanded');
+      if (expanded) {
+        expanded.classList.add('animate-expand');
+        expanded.addEventListener('animationend', () => expanded.classList.remove('animate-expand'), { once: true });
+      }
+
       connectFileWatch();
     }
 

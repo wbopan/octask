@@ -1,21 +1,23 @@
 ---
 name: octask
-description: Phase-gate task management conventions for TASKS.md files. Use this skill whenever you are about to create, edit, update, or modify tasks in a TASKS.md file — including marking task status, adding new tasks, writing acceptance criteria, or restructuring phases. Also trigger when the user mentions TASKS.md, asks to add a todo, track progress, plan project phases, or manage task status. Even if you're just marking a single task as done, consult this skill first.
+description: Task management conventions for TASKS.md files. Use this skill whenever you are about to create, edit, update, or modify tasks in a TASKS.md file — including marking task status, adding new tasks, writing acceptance criteria, or restructuring sections. Also trigger when the user mentions TASKS.md, asks to add a todo, track progress, or manage task status. Even if you're just marking a single task as done, consult this skill first.
 ---
 
 # Task Management
 
-Conventions and workflow for maintaining a `TASKS.md` file that follows a phase-gate model. This skill tells you how to read, write, and update tasks correctly.
+Conventions and workflow for maintaining a `TASKS.md` file. This skill tells you how to read, write, and update tasks correctly.
 
-## Why Phase-Gate
+## Sections
 
-A research or engineering project naturally breaks into phases. Each phase produces a verified foundation that the next phase builds on. Within a phase, tasks share that foundation and can be worked on in parallel. Between phases, a "goal" describes what "done enough" looks like — not a hard checklist, but a soft gate that helps decide when to shift focus.
+Tasks in TASKS.md can optionally be grouped under `## Section Name` headers. Sections are lightweight grouping — they help organize tasks when a project has distinct areas of work, but they're entirely optional. A TASKS.md with no `##` headers at all is perfectly valid.
 
-This structure matters because it controls blast radius: if a Phase 1 conclusion turns out wrong, only Phase 1 work is affected. If phases are entangled, a single bad result can invalidate work across the board.
+Each section can have an optional `Description:` paragraph after its header, explaining the section's purpose.
 
 ## File Structure
 
-`# TASKS` → `## Phase N: Name` → `Goal:` paragraph → task list. Each task is a `- [ ]` line ending with a `#slug` ID, with indented description and `AC:` line underneath.
+`# TASKS` → optional `## Section Name` → optional `Description:` paragraph → task list. Each task is a `- [ ]` line ending with a `#slug` ID, with indented description and `AC:` line underneath.
+
+Tasks can appear directly under `# TASKS` without any section header — this is the simplest form. When sections are used, each `## ` header starts a new group.
 
 When creating a new TASKS.md from scratch, copy `references/template.md` and fill in the placeholders.
 
@@ -101,7 +103,7 @@ If the user asks you to add a task without providing an AC, warn them and sugges
 
 ### Formatting rules
 
-- No blank lines between list items within a phase.
+- No blank lines between list items within a section.
 - Description lines are indented under the task title.
 - AC lines start with `AC:` for easy scanning.
 - One task = one deliverable. If a task has multiple independent deliverables, split it.
@@ -118,11 +120,9 @@ Every task carries a short, human-readable ID appended to the title line as a `#
 
 IDs are useful for referencing tasks in commits, conversations, and branch names. When creating a task, always generate an ID from the title. When the user specifies an ID, use it as-is.
 
-## Phase Goals
+## Section Descriptions
 
-Each phase opens with a `Goal:` paragraph. This serves as a soft gate — it describes both why this phase exists and what "enough to move on" looks like. It's not a binary pass/fail; it's a judgment call informed by the goal description.
-
-When a phase's goal is substantially met (even if some tasks remain), it's reasonable to start work on the next phase's tasks that don't depend on the remaining items. This is phase overlap, and it's fine — just be aware of which conclusions are stable and which aren't.
+Sections can optionally open with a `Description:` paragraph. This explains what the section covers and provides context for its tasks. It's purely informational — there's no "gate" or completion condition.
 
 ## Completing Tasks
 
@@ -147,7 +147,7 @@ The plugin includes an interactive kanban dashboard. Use the `/dashboard` comman
 
 The dashboard runs at `http://localhost:3847`. The index page lists all projects (discovered from `~/.claude/projects/`) that have a TASKS.md file. Click a project to open its dashboard. The dashboard:
 
-- **Left sidebar**: Phase overview with progress bars, goals, and per-phase status counts. Click a phase to filter.
-- **Four status columns**: Ongoing, Pending, Done, Backlog — tasks grouped by phase within each column.
+- **Left sidebar**: Section overview with progress bars. Click a section to filter.
+- **Four status columns**: Ongoing, Pending, Done, Backlog — tasks grouped by section within each column.
 - **Drag-and-drop**: Drag cards between columns to change status, or reorder within a column.
 - **Auto-save**: Changes save automatically to disk via the backend API.

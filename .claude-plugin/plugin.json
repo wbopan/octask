@@ -1,6 +1,6 @@
 {
   "name": "octask",
-  "description": "Octask — phase-gate task management with TASKS.md kanban dashboard",
+  "description": "Octask — task management with TASKS.md kanban dashboard",
   "version": "1.0.0",
   "author": {
     "name": "Wenbo Pan"

@@ -2,9 +2,9 @@
 
 A sample project for testing the starting-task skill.
 
-## Phase 1: Core Features
+## Core Features
 
-Goal: Basic CRUD operations working end-to-end with persistent storage.
+Description: Basic CRUD operations working end-to-end with persistent storage.
 
 - [x] Set up Express server with SQLite #setup-express-sqlite
     Database connection, basic middleware, health endpoint.
@@ -20,9 +20,9 @@ Goal: Basic CRUD operations working end-to-end with persistent storage.
     Centralized error handling with proper HTTP status codes and error response format.
     AC: All API errors return consistent JSON format with appropriate status codes.
 
-## Phase 2: Frontend
+## Frontend
 
-Goal: A usable React frontend that connects to the API and lets users manage their projects.
+Description: A usable React frontend that connects to the API and lets users manage their projects.
 
 - [ ] React app scaffolding with Vite #react-scaffold
     Set up React + TypeScript + Vite, configure proxy to backend, add Tailwind CSS.
