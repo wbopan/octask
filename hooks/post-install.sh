@@ -12,14 +12,14 @@ if [ -f "${SERVER_DIR}/package.json" ]; then
 fi
 
 # Create global CLI symlink
-SCRIPT="${PLUGIN_ROOT}/scripts/task-dashboard.sh"
+SCRIPT="${PLUGIN_ROOT}/scripts/octask-dashboard.sh"
 BIN_DIR="${HOME}/.local/bin"
-LINK="${BIN_DIR}/pgdashboard"
+LINK="${BIN_DIR}/octask-dashboard"
 
 if [ -f "${SCRIPT}" ]; then
   mkdir -p "${BIN_DIR}"
   ln -sf "${SCRIPT}" "${LINK}"
   chmod +x "${SCRIPT}"
-  echo "[octask] Created global command: pgdashboard"
+  echo "[octask] Created global command: octask-dashboard"
   echo "[octask] Make sure ${BIN_DIR} is in your PATH"
 fi

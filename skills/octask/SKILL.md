@@ -143,7 +143,7 @@ When a task is deferred, mark it `[-]` rather than deleting it. Backlog items ar
 
 ## Dashboard
 
-The plugin includes an interactive kanban dashboard. Use the `/dashboard` command or run `task-dashboard` from your terminal to start it.
+The plugin includes an interactive kanban dashboard. Run `octask-dashboard` from your terminal to start it.
 
 The dashboard runs at `http://localhost:3847`. The index page lists all projects (discovered from `~/.claude/projects/`) that have a TASKS.md file. Click a project to open its dashboard. The dashboard:
 
