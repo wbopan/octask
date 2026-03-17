@@ -1875,28 +1875,40 @@
           srcSection.tasks.splice(taskIdx, 1);
 
           const insertBefore = findDropPosition(body, e.clientY);
+          const allGroups = [...body.querySelectorAll('.section-group')];
 
-          if (insertBefore) {
-            const groupEl = insertBefore.closest('.section-group');
-            const dstSection = sections.find(s => s.id === groupEl?.dataset.sectionId);
-
-            if (!dstSection) {
-              srcSection.tasks.push(task);
-            } else if (insertBefore.classList.contains('task-card')) {
+          if (insertBefore && insertBefore.classList.contains('task-card')) {
+            // Insert before a card → same section as that card, before it
+            const dstSection = sections.find(s => s.id === insertBefore.dataset.sectionId);
+            if (dstSection) {
               const bIdx = dstSection.tasks.findIndex(t => t.id == parseFloat(insertBefore.dataset.taskId));
               if (bIdx !== -1) dstSection.tasks.splice(bIdx, 0, task);
               else dstSection.tasks.push(task);
             } else {
-              // Dropped before a section header: insert before the first same-status task in this section
-              const firstIdx = dstSection.tasks.findIndex(t => t.status === status);
-              if (firstIdx !== -1) dstSection.tasks.splice(firstIdx, 0, task);
-              else dstSection.tasks.push(task);
+              srcSection.tasks.push(task);
+            }
+          } else if (insertBefore) {
+            // Insert before a section header → end of the PREVIOUS section
+            const headerGroup = insertBefore.closest('.section-group');
+            const groupIdx = allGroups.indexOf(headerGroup);
+            if (groupIdx > 0) {
+              const prevId = allGroups[groupIdx - 1].dataset.sectionId;
+              const prevSection = sections.find(s => s.id === prevId);
+              if (prevSection) prevSection.tasks.push(task);
+              else srcSection.tasks.push(task);
+            } else {
+              // Before the first header → __default section
+              let def = sections.find(s => s.id === '__default');
+              if (!def) {
+                def = { id: '__default', name: '', description: '', tasks: [] };
+                sections.unshift(def);
+              }
+              def.tasks.push(task);
             }
           } else {
-            // Below everything: append to last visible section
-            const allGroups = [...body.querySelectorAll('.section-group')];
-            const lastSectionId = allGroups[allGroups.length - 1]?.dataset.sectionId;
-            const dstSection = sections.find(s => s.id === lastSectionId) || srcSection;
+            // Below everything → append to last section
+            const lastId = allGroups[allGroups.length - 1]?.dataset.sectionId;
+            const dstSection = sections.find(s => s.id === lastId) || srcSection;
             dstSection.tasks.push(task);
           }
 
