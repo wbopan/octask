@@ -1364,29 +1364,17 @@
       el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true });
     }
 
-    function colIdx(el) {
-      const col = el.closest('.status-column');
-      return col ? [...col.parentElement.children].indexOf(col) : 0;
-    }
-
     function animatedRender(skipTaskId) {
       const oldRects = new Map();
-      document.querySelectorAll('.task-card').forEach(c => {
-        oldRects.set('c-' + c.dataset.taskId, c.getBoundingClientRect());
-      });
-      document.querySelectorAll('.phase-section-header').forEach(h => {
-        oldRects.set('h-' + colIdx(h) + '-' + h.textContent.trim(), h.getBoundingClientRect());
+      document.querySelectorAll('[data-flip-key]').forEach(el => {
+        oldRects.set(el.dataset.flipKey, el.getBoundingClientRect());
       });
       render();
       const spring = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
-      document.querySelectorAll('.task-card').forEach(c => {
-        if (skipTaskId != null && c.dataset.taskId === String(skipTaskId)) return;
-        const old = oldRects.get('c-' + c.dataset.taskId);
-        if (old) flipAnimate(c, old, spring);
-      });
-      document.querySelectorAll('.phase-section-header').forEach(h => {
-        const old = oldRects.get('h-' + colIdx(h) + '-' + h.textContent.trim());
-        if (old) flipAnimate(h, old, spring);
+      document.querySelectorAll('[data-flip-key]').forEach(el => {
+        if (skipTaskId != null && el.dataset.taskId === String(skipTaskId)) return;
+        const old = oldRects.get(el.dataset.flipKey);
+        if (old) flipAnimate(el, old, spring);
       });
     }
 
@@ -1519,6 +1507,7 @@
             const sHeader = document.createElement('div');
             sHeader.className = 'phase-section-header';
             sHeader.textContent = phase.name;
+            sHeader.dataset.flipKey = `h-${status}-${phase.id}`;
             section.appendChild(sHeader);
           }
 
@@ -1543,6 +1532,7 @@
       card.draggable = true;
       card.dataset.taskId = task.id;
       card.dataset.phaseId = phase.id;
+      card.dataset.flipKey = 'c-' + task.id;
 
       // Actions
       const actions = document.createElement('div');
@@ -1648,42 +1638,26 @@
       return card;
     }
 
+    // Unified hit-testing: headers and cards are equal items in one flat scan
+    function findDropPosition(body, clientY) {
+      for (const item of body.querySelectorAll('.phase-section-header, .task-card:not(.dragging)')) {
+        const r = item.getBoundingClientRect();
+        if (clientY < r.top + r.height / 2) return item;
+      }
+      return null;
+    }
+
     function setupColumnDropZone(body, status) {
       body.addEventListener('dragover', (e) => {
         e.preventDefault();
         body.classList.add('drag-over');
-
-        // Show indicator
         body.querySelectorAll('.drop-indicator').forEach(el => el.remove());
-        const cards = [...body.querySelectorAll('.task-card:not(.dragging)')];
 
-        // Find which phase section the cursor is over
-        const sections = [...body.querySelectorAll('.phase-section')];
-        let targetSection = null;
-        for (const s of sections) {
-          const r = s.getBoundingClientRect();
-          if (e.clientY >= r.top && e.clientY <= r.bottom) { targetSection = s; break; }
-        }
-
-        // Find card to insert before (only within the target section if known)
-        const searchCards = targetSection
-          ? cards.filter(c => targetSection.contains(c))
-          : cards;
-        let insertBefore = null;
-        for (const c of searchCards) {
-          const r = c.getBoundingClientRect();
-          if (e.clientY < r.top + r.height / 2) { insertBefore = c; break; }
-        }
-
+        const insertBefore = findDropPosition(body, e.clientY);
         const indicator = document.createElement('div');
         indicator.className = 'drop-indicator';
-        if (insertBefore) {
-          insertBefore.before(indicator);
-        } else if (targetSection) {
-          targetSection.appendChild(indicator);
-        } else {
-          body.appendChild(indicator);
-        }
+        if (insertBefore) insertBefore.before(indicator);
+        else body.appendChild(indicator);
       });
 
       body.addEventListener('dragleave', (e) => {
@@ -1706,53 +1680,33 @@
           if (taskIdx === -1) return;
           const task = srcPhase.tasks[taskIdx];
 
-          // Update status to match target column
           task.status = status;
-
-          // Find position: which phase section and card to insert before
-          const cards = [...body.querySelectorAll('.task-card:not(.dragging)')];
-          const sections = [...body.querySelectorAll('.phase-section')];
-          let targetSection = null;
-          for (const s of sections) {
-            const r = s.getBoundingClientRect();
-            if (e.clientY >= r.top && e.clientY <= r.bottom) { targetSection = s; break; }
-          }
-
-          const searchCards = targetSection
-            ? cards.filter(c => targetSection.contains(c))
-            : cards;
-          let beforeCard = null;
-          for (const c of searchCards) {
-            const r = c.getBoundingClientRect();
-            if (e.clientY < r.top + r.height / 2) { beforeCard = c; break; }
-          }
-
-          // Remove from source phase
           srcPhase.tasks.splice(taskIdx, 1);
 
-          if (beforeCard) {
-            const bPhaseId = beforeCard.dataset.phaseId;
-            const bTaskId = parseFloat(beforeCard.dataset.taskId);
-            const dstPhase = phases.find(p => p.id === bPhaseId);
-            if (dstPhase) {
-              const bIdx = dstPhase.tasks.findIndex(t => t.id == bTaskId);
-              if (bIdx !== -1) {
-                dstPhase.tasks.splice(bIdx, 0, task);
-              } else {
-                dstPhase.tasks.push(task);
-              }
-            } else {
+          const insertBefore = findDropPosition(body, e.clientY);
+
+          if (insertBefore) {
+            const section = insertBefore.closest('.phase-section');
+            const dstPhase = phases.find(p => p.id === section?.dataset.phaseId);
+
+            if (!dstPhase) {
               srcPhase.tasks.push(task);
-            }
-          } else if (targetSection) {
-            const dstPhase = phases.find(p => p.id === targetSection.dataset.phaseId);
-            if (dstPhase) {
-              dstPhase.tasks.push(task);
+            } else if (insertBefore.classList.contains('task-card')) {
+              const bIdx = dstPhase.tasks.findIndex(t => t.id == parseFloat(insertBefore.dataset.taskId));
+              if (bIdx !== -1) dstPhase.tasks.splice(bIdx, 0, task);
+              else dstPhase.tasks.push(task);
             } else {
-              srcPhase.tasks.push(task);
+              // Dropped before a section header: insert before the first same-status task in this phase
+              const firstIdx = dstPhase.tasks.findIndex(t => t.status === status);
+              if (firstIdx !== -1) dstPhase.tasks.splice(firstIdx, 0, task);
+              else dstPhase.tasks.push(task);
             }
           } else {
-            srcPhase.tasks.push(task);
+            // Below everything: append to last visible phase
+            const allSections = [...body.querySelectorAll('.phase-section')];
+            const lastPhaseId = allSections[allSections.length - 1]?.dataset.phaseId;
+            const dstPhase = phases.find(p => p.id === lastPhaseId) || srcPhase;
+            dstPhase.tasks.push(task);
           }
 
           markChanged();

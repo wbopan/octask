@@ -7,7 +7,7 @@ import https from 'https';
 import { execFile } from 'child_process';
 
 const app = express();
-const PORT = 3847;
+const PORT = parseInt(process.env.PORT, 10) || 3847;
 const PROJECTS_DIR = path.join(os.homedir(), '.claude', 'projects');
 const ASSETS_DIR = path.join(import.meta.dirname, 'assets');
 
