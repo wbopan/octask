@@ -1146,3 +1146,50 @@
     .project-expanded.animate-enter {
       animation: fade-up 0.3s ease both;
     }
+
+@media (display-mode: standalone) {
+  body {
+    user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable] {
+    user-select: text;
+  }
+  code {
+    user-select: all;
+  }
+}
+
+@media (display-mode: standalone) {
+  .empty-overlay code {
+    user-select: all;
+  }
+}
+
+.empty-overlay code {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 14px;
+  background: var(--bg-warm);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  color: var(--accent);
+}
+
+@media (display-mode: window-controls-overlay) {
+  header {
+    padding-left: env(titlebar-area-x, 0);
+    padding-top: 0;
+    height: env(titlebar-area-height, auto);
+    -webkit-app-region: drag;
+  }
+
+  header button,
+  header a,
+  header .logo {
+    -webkit-app-region: no-drag;
+  }
+}

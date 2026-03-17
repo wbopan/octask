@@ -23,3 +23,8 @@ if [ -f "${SCRIPT}" ]; then
   echo "[octask] Created global command: octask-dashboard"
   echo "[octask] Make sure ${BIN_DIR} is in your PATH"
 fi
+
+# Download bundled UI assets (fonts + lucide)
+if [ -x "${PLUGIN_ROOT}/scripts/download-assets.sh" ]; then
+  "${PLUGIN_ROOT}/scripts/download-assets.sh"
+fi

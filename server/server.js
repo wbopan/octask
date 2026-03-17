@@ -10,6 +10,15 @@ const app = express();
 const PORT = 3847;
 const PROJECTS_DIR = path.join(os.homedir(), '.claude', 'projects');
 const ASSETS_DIR = path.join(import.meta.dirname, 'assets');
+let server;
+let lastActivityAt = Date.now();
+const IDLE_SHUTDOWN_MS = 24 * 60 * 60 * 1000;
+const sseConnections = new Set();
+
+app.use((req, _res, next) => {
+  lastActivityAt = Date.now();
+  next();
+});
 
 app.use('/assets', express.static(ASSETS_DIR));
 app.use(express.json({ limit: '1mb' }));
@@ -101,23 +110,31 @@ async function getProjectById(projectId) {
   return project || null;
 }
 
-// GET / — redirect to first project, or show empty state
-app.get('/', async (req, res) => {
-  const projects = await discoverProjects();
-  if (projects.length > 0) {
-    return res.redirect(302, `/project/${projects[0].id}`);
+// GET /sw.js — service worker bootstrap at root scope
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(ASSETS_DIR, 'sw.js'));
+});
+
+// GET /offline — shell route for service worker fallback
+app.get('/offline', async (req, res) => {
+  try {
+    const html = await fs.readFile(path.join(ASSETS_DIR, 'dashboard.html'), 'utf8');
+    res.type('html').send(html);
+  } catch {
+    res.status(500).send('dashboard.html not found');
   }
-  res.type('html').send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Octask Dashboard</title>
-</head>
-<body>
-  <p>No projects with TASKS.md found.</p>
-</body>
-</html>`);
+});
+
+// GET / — serve dashboard shell
+app.get('/', async (req, res) => {
+  try {
+    const html = await fs.readFile(path.join(ASSETS_DIR, 'dashboard.html'), 'utf8');
+    res.type('html').send(html);
+  } catch {
+    res.status(500).send('dashboard.html not found');
+  }
 });
 
 // GET /api/projects — list all discovered projects with TASKS.md stats
@@ -318,6 +335,7 @@ app.get('/api/watch/:projectId', async (req, res) => {
     'Connection': 'keep-alive',
   });
   res.write('data: {"connected":true}\n\n');
+  sseConnections.add(res);
 
   let debounceTimer = null;
   let watcher;
@@ -339,6 +357,7 @@ app.get('/api/watch/:projectId', async (req, res) => {
 
   req.on('close', () => {
     clearTimeout(debounceTimer);
+    sseConnections.delete(res);
     if (watcher) watcher.close();
   });
 });
@@ -431,6 +450,29 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+function gracefulShutdown() {
+  console.log('[octask] Idle for 24h — shutting down');
+  for (const res of sseConnections) {
+    try { res.end(); } catch {}
+  }
+  sseConnections.clear();
+  if (!server) {
+    process.exit(0);
+    return;
+  }
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 5000);
+}
+
+setInterval(() => {
+  if (Date.now() - lastActivityAt >= IDLE_SHUTDOWN_MS) {
+    gracefulShutdown();
+  }
+}, 10 * 60 * 1000);
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+server = app.listen(PORT, () => {
   console.log(`Octask Dashboard running at http://localhost:${PORT}`);
 });

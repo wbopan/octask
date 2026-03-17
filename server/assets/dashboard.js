@@ -8,6 +8,7 @@
     let activeSectionId = null; // selected section in sidebar, null = show all
     let sessionMap = {}; // customTitle → { sessionId, status, summary }
     let hideDone = localStorage.getItem('octask-hide-done') !== 'false';
+    let healthPollTimer = null;
 
     // Undo stack — stores snapshots taken before each mutation
     const undoStack = [];
@@ -77,6 +78,31 @@
     function hideErrorBanner() {
       errorBanner.classList.remove('visible');
       serverConnected = true;
+    }
+
+    function startHealthPolling() {
+      if (healthPollTimer) return;
+      healthPollTimer = setInterval(async () => {
+        try {
+          const res = await fetch('/api/health');
+          if (res.ok) {
+            clearInterval(healthPollTimer);
+            healthPollTimer = null;
+            location.reload();
+          }
+        } catch {}
+      }, 3000);
+    }
+
+    function showOfflineState() {
+      const h2 = $('emptyState').querySelector('h2');
+      const p = $('emptyState').querySelector('p');
+      h2.textContent = 'Server Not Running';
+      p.innerHTML = 'Run this command to start:<br><code style="font-family:var(--mono);font-size:14px;background:var(--bg-warm);border:1px solid var(--border);padding:6px 14px;border-radius:var(--radius-sm);margin-top:10px;color:var(--accent);user-select:all">octask-dashboard</code>';
+      $('emptyState').style.display = 'flex';
+      $('sidebar').style.display = 'none';
+      $('boardArea').style.display = 'none';
+      startHealthPolling();
     }
 
     $('errorBannerRetry').addEventListener('click', async () => {
@@ -1050,10 +1076,9 @@
     }
 
     async function fetchProjects() {
-      try {
-        const res = await fetch('/api/projects');
-        if (res.ok) allProjects = await res.json();
-      } catch {}
+      const res = await fetch('/api/projects');
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      allProjects = await res.json();
     }
 
     async function loadProject({ silent = false, skipRender = false } = {}) {
@@ -1090,6 +1115,9 @@
           };
         }
 
+        const projectName = window.__projectName || (allProjects.find(p => p.id === projectId) || {}).name;
+        if (projectName) document.title = `${projectName} — Octask`;
+
         $('emptyState').style.display = 'none';
         $('sidebar').style.display = 'flex';
         $('boardArea').style.display = 'flex';
@@ -1122,10 +1150,9 @@
         fetchUsage();
       } catch (e) {
         const isNetworkError = e.message === 'Failed to fetch' || e.name === 'TypeError';
-        $('emptyState').querySelector('h2').textContent = isNetworkError ? 'Connection Failed' : 'Error';
-        $('emptyState').querySelector('p').textContent = isNetworkError
-          ? 'Could not reach the server — is it running on port 3847?'
-          : e.message;
+        if (isNetworkError) return showOfflineState();
+        $('emptyState').querySelector('h2').textContent = 'Error';
+        $('emptyState').querySelector('p').textContent = e.message;
       }
     }
 
@@ -1235,12 +1262,25 @@
     };
 
     fetchProjects().then(() => {
+      if (!projectId) {
+        if (allProjects.length > 0) {
+          projectId = allProjects[0].id;
+          history.replaceState({}, '', '/project/' + encodeURIComponent(projectId));
+        } else {
+          $('emptyState').querySelector('h2').textContent = 'No projects found';
+          $('emptyState').querySelector('p').textContent = 'No projects with TASKS.md were found in ~/.claude/projects.';
+          return;
+        }
+      }
+
       loadProject().then(() => {
         fetchSessions().then(render);
         setInterval(async () => { await fetchSessions(); render(); }, 5000);
         setInterval(fetchUsage, 120000);
         connectFileWatch();
       });
+    }).catch(() => {
+      showOfflineState();
     });
     $('saveBtn').addEventListener('click', autoSave);
 
