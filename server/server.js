@@ -101,109 +101,43 @@ async function getProjectById(projectId) {
   return project || null;
 }
 
-// GET / — project index
+// GET / — redirect to first project, or show empty state
 app.get('/', async (req, res) => {
   const projects = await discoverProjects();
-
-  const cards = projects.map(p => `
-    <a class="card" href="/project/${encodeURIComponent(p.id)}">
-      <div class="card-name">${escapeHtml(p.name)}</div>
-      <div class="card-path">${escapeHtml(p.path)}</div>
-    </a>`).join('');
-
-  const html = `<!DOCTYPE html>
+  if (projects.length > 0) {
+    return res.redirect(302, `/project/${projects[0].id}`);
+  }
+  res.type('html').send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Octask Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #f8f6f1;
-      --surface: #ffffff;
-      --accent: #c4613c;
-      --accent-hover: #a84f30;
-      --text: #2b2420;
-      --text-muted: #8a7f78;
-      --border: #e4dfd8;
-      --font: 'DM Sans', sans-serif;
-      --radius: 10px;
-    }
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 2rem;
-    }
-    header {
-      max-width: 800px;
-      margin: 0 auto 2rem;
-    }
-    header h1 {
-      font-size: 1.75rem;
-      font-weight: 600;
-      color: var(--accent);
-    }
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.25rem;
-      font-size: 0.95rem;
-    }
-    .grid {
-      max-width: 800px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-    .card {
-      display: block;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 2px 12px rgba(196, 97, 60, 0.12);
-    }
-    .card-name {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 0.35rem;
-    }
-    .card-path {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      word-break: break-all;
-    }
-    .empty {
-      max-width: 800px;
-      margin: 0 auto;
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
-  </style>
 </head>
 <body>
-  <header>
-    <h1>Octask Dashboard</h1>
-    <p>${projects.length} project${projects.length !== 1 ? 's' : ''} with TASKS.md</p>
-  </header>
-  ${projects.length ? `<div class="grid">${cards}</div>` : '<p class="empty">No projects with TASKS.md found.</p>'}
+  <p>No projects with TASKS.md found.</p>
 </body>
-</html>`;
+</html>`);
+});
 
-  res.type('html').send(html);
+// GET /api/projects — list all discovered projects with TASKS.md stats
+app.get('/api/projects', async (req, res) => {
+  const projects = await discoverProjects();
+  const result = [];
+  for (const p of projects) {
+    let stats = { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 };
+    try {
+      const content = await fs.readFile(path.join(p.path, 'TASKS.md'), 'utf8');
+      for (const line of content.split('\n')) {
+        if (/^- \[ \]/.test(line)) { stats.todo++; stats.total++; }
+        else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
+        else if (/^- \[x\]/i.test(line)) { stats.done++; stats.total++; }
+        else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
+      }
+    } catch {}
+    result.push({ id: p.id, name: p.name, path: p.path, stats });
+  }
+  res.json(result);
 });
 
 // GET /project/:projectId — serve dashboard.html with injected projectId
