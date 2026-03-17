@@ -125,15 +125,17 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     AC: 测试 skill：当用户发送 /dashboard 命令时，Claude 首先检查端口是否在运行，如果没有运行，就直接 nohup 启动（octask-dashboard）。Claude 告知用户已经在 localhost：port 上运行服务了，如果没有运行，可以使用 octask-dashboard 命令，然后使用 open 命令在浏览器直接打开这个 url，并建议用户将它保存成 PWA。
 - [x] 卡片渲染增加 CM 字段展示 #render-cm-on-card
     类似 AC 的渲染方式，在任务卡片上也展示 CM（Completion Memo）字段。包括解析器提取 CM:、序列化器输出 CM:、卡片渲染绿色 CM 标签、编辑 modal 增加 CM 字段。
-    AC: 含有 CM: 行的任务在 dashboard 卡片上显示绿色 CM 标签和内容；编辑 modal 可编辑 CM 字段；序列化后 CM: 行保留在 TASKS.md 中。
     CM: 新增卡片创建和编辑流程对 CM 的支持：解析器/序列化器能提取并写回 CM，卡片渲染新增绿色 CM 标签，编辑/新建弹窗均可填写 CM。
+    AC: 含有 CM: 行的任务在 dashboard 卡片上显示绿色 CM 标签和内容；编辑 modal 可编辑 CM 字段；序列化后 CM: 行保留在 TASKS.md 中。
 - [ ] Allow Multiline AC and CM #fix-multiline-ac
-    - 现在的 AC 一个任务都只能出现一行，我们需要允许多行的 AC / CM，相当于允许有多个 acceptance criteria。具体方法就是多个 AC 开头的行。
-    - 同时 The description and acceptance criteria.  的文本管理都进行一个格式化。换行的时候总是增加一个 `- ` 来标记 bullet point. 如果没有的话，保存的时候也自动 format 增加一个
-    AC: - 创建一个测试任务，具有两行的 AC。在 dashboard 当中可以正确的渲染和编辑，储存以后 AC的结构依然保留. 如果添加内容没有 `- ` 保存到 task MD 文本当中的也是正确的 - AC: text with no duplicated `-`
-- [ ] Dashboard UI 无法创建新任务 #fix-dashboard-create-task
-    Dashboard 的创建任务功能（+ 按钮或 modal）无法正常工作，用户无法通过 UI 添加新任务。需要排查并修复。
-    AC: 用户可以通过 Dashboard UI 的创建按钮成功添加新任务，任务正确写入 TASKS.md 并在看板上显示。
+    现在的 AC 一个任务都只能出现一行，我们需要允许多行的 AC / CM，相当于允许有多个 acceptance criteria。具体方法就是多个 AC 开头的行。
+    sdsdss
+    sdsdsd
+    CM: 当前仍未完全修复：新增第三行 AC 或修改第二行时，保存到 TASKS.md 后内容会丢失/无法稳定持久化（仅部分行看得见，或刷新后恢复旧内容）。
+    AC: 创建一个测试任务，具有两行的 AC。在 dashboard 当中可以正确的渲染和编辑，储存以后 AC的结构依然保留.
 - [ ] 卡片悬浮操作按钮重设计 #card-hover-actions-redesign
     重新设计卡片操作交互：hover 时整张卡片模糊化，浮现三个大按钮（终端打开、复制 ID、删除）。终端按钮根据 session 状态有不同行为：活跃 session → 聚焦 Ghostty tab；无活跃但有历史 session → 复制 `cd {path} && claude resume {id}`；无 session → 复制 `cd {path} && claude "/rename {slug}"`。删除按钮需确认弹窗。替换当前右上角的小图标按钮。
     AC: hover 卡片时背景模糊并显示三个操作按钮；终端按钮根据 session 状态执行对应操作；删除按钮点击后弹出确认弹窗；复制 ID 按钮复制任务 slug 到剪贴板。
+- [-] Dashboard UI 无法创建新任务 #fix-dashboard-create-task
+    Dashboard 的创建任务功能（+ 按钮或 modal）无法正常工作，用户无法通过 UI 添加新任务。需要排查并修复。
+    AC: 用户可以通过 Dashboard UI 的创建按钮成功添加新任务，任务正确写入 TASKS.md 并在看板上显示。

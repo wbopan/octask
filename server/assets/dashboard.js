@@ -157,6 +157,18 @@
       return (text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    function splitMultiline(value) {
+      return (value || '')
+        .replace(/\r\n?/g, '\n')
+        .split('\n')
+        .map(line => line.replace(/\s+$/g, ''))
+        .filter(line => line !== '');
+    }
+
+    function escapeMultilineHtml(value) {
+      return splitMultiline(value).map(escapeHtml).join('<br>');
+    }
+
     // ===== PARSE =====
     function parseTasksMd(content) {
       const result = [];
@@ -239,15 +251,19 @@
 
     function flushTask(task, descLines) {
       let full = descLines.join('\n').trim();
-      const acMatch = full.match(/^-?\s*AC:\s*(.+)$/m);
-      if (acMatch) {
-        task.ac = acMatch[1].trim();
-        full = full.replace(/^-?\s*AC:\s*.+$/m, '');
+      const acLines = [...full.matchAll(/^-?\s*AC:\s*(.*)$/gm)]
+        .map((m) => (m[1] || '').replace(/\s+$/g, ''))
+        .filter((line) => line !== '');
+      if (acLines.length) {
+        task.ac = acLines.join('\n');
+        full = full.replace(/^-?\s*AC:\s*.*$/gm, '');
       }
-      const cmMatch = full.match(/^-?\s*CM:\s*(.+)$/m);
-      if (cmMatch) {
-        task.cm = cmMatch[1].trim();
-        full = full.replace(/^-?\s*CM:\s*.+$/m, '');
+      const cmLines = [...full.matchAll(/^-?\s*CM:\s*(.*)$/gm)]
+        .map((m) => (m[1] || '').replace(/\s+$/g, ''))
+        .filter((line) => line !== '');
+      if (cmLines.length) {
+        task.cm = cmLines.join('\n');
+        full = full.replace(/^-?\s*CM:\s*.*$/gm, '');
       }
       task.desc = full.replace(/\n{2,}/g, '\n').trim();
     }
@@ -263,8 +279,8 @@
         section.tasks.forEach(t => {
           md += `- ${STATUS_SYMBOLS[t.status] || '[ ]'} ${t.title}${t.slug ? ' #' + t.slug : ''}\n`;
           if (t.desc) t.desc.split('\n').forEach(l => { md += `    ${l}\n`; });
-          if (t.cm) md += `    CM: ${t.cm}\n`;
-          if (t.ac) md += `    AC: ${t.ac}\n`;
+          if (t.cm) splitMultiline(t.cm).forEach(line => { md += `    CM: ${line}\n`; });
+          if (t.ac) splitMultiline(t.ac).forEach(line => { md += `    AC: ${line}\n`; });
         });
       });
       return md.trimEnd() + '\n';
@@ -595,7 +611,7 @@
       if (task.ac) {
         const ac = document.createElement('div');
         ac.className = 'task-card-ac';
-        ac.innerHTML = `<span class="ac-label">AC</span>${escapeHtml(task.ac)}`;
+        ac.innerHTML = `<span class="ac-label">AC</span>${escapeMultilineHtml(task.ac)}`;
         ac.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
         card.appendChild(ac);
       }
@@ -604,7 +620,7 @@
       if (task.cm) {
         const cm = document.createElement('div');
         cm.className = 'task-card-cm';
-        cm.innerHTML = `<span class="cm-label">CM</span>${escapeHtml(task.cm)}`;
+        cm.innerHTML = `<span class="cm-label">CM</span>${escapeMultilineHtml(task.cm)}`;
         cm.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
         card.appendChild(cm);
       }
@@ -821,8 +837,8 @@
           title,
           slug: $('mSlug').value.trim().replace(/^#/, ''),
           desc: $('mDesc').value.trim(),
-          ac: $('mAc').value.trim(),
-          cm: $('mCm').value.trim(),
+          ac: ($('mAc').value || '').replace(/\r\n?/g, '\n'),
+          cm: ($('mCm').value || '').replace(/\r\n?/g, '\n'),
           status: selStatus ? selStatus.dataset.status : defaultStatus,
           sectionId: selSection.id
         });
@@ -888,8 +904,8 @@
         task.slug = $('mSlug').value.trim().replace(/^#/, '');
         task.status = selStatus ? selStatus.dataset.status : task.status;
         task.desc = $('mDesc').value.trim();
-        task.ac = $('mAc').value.trim();
-        task.cm = $('mCm').value.trim();
+        task.ac = ($('mAc').value || '').replace(/\r\n?/g, '\n');
+        task.cm = ($('mCm').value || '').replace(/\r\n?/g, '\n');
 
         // Handle section move
         if (hasNamedSections && $('mSection')) {
@@ -1301,7 +1317,20 @@
       if (fileWatchSource) fileWatchSource.close();
       if (hasChanges) { e.preventDefault(); e.returnValue = ''; }
     });
+
+    function isTextInput(target) {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      if (tag === 'TEXTAREA') return true;
+      if (tag === 'INPUT') {
+        const type = (target.getAttribute('type') || 'text').toLowerCase();
+        return ['text', 'search', 'url', 'tel', 'email', 'password', 'number', 'date', 'datetime-local', 'month', 'week', 'time', 'datetime', 'color'].includes(type);
+      }
+      if (target.isContentEditable) return true;
+      return false;
+    }
+
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); autoSave(); }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey && !isTextInput(e.target)) { e.preventDefault(); undo(); }
     });
