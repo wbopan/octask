@@ -2,7 +2,7 @@
 
 This file tracks all tasks for [project name], organized into phases following a phase-gate model. Each phase has a goal that describes both its purpose and what "done enough" looks like to move on. Within each phase, tasks are independent and can be worked on in parallel.
 
-**Before making any edits to this file, you must read the `/task-management` skill first.**
+**Before making any edits to this file, you must read the `/octask` skill first.**
 
 ## Phase 1: [Name]
 

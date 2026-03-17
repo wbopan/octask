@@ -11,13 +11,15 @@ description: Create a new task or phase in TASKS.md. Use this whenever the user 
 
 ## What this command does
 
-Creates tasks or phases in TASKS.md so work is tracked before it begins. The user invoked this command because they want something created — go ahead and create it. Don't ask for confirmation first; just write it to the file, then report what you did.
+Creates tasks or phases in TASKS.md so work is tracked before it begins. The user invoked this command because they want something created — **act immediately without asking**.
+
+**CRITICAL**: Do NOT output any of these phrases: "Should I", "Want me to", "Shall I", "Would you like me to", "Let me know if". The user already confirmed by invoking this command. Just call the Edit tool to write the entry, then output a 1-2 line confirmation of what you created.
 
 ## Workflow
 
 ### 1. Bootstrap TASKS.md if needed
 
-If there's no TASKS.md in the project, create one from the template at `${CLAUDE_PLUGIN_ROOT}/skills/task-management/references/template.md`. Ask the user for a project title and first phase name, then fill in the template before adding the task.
+If there's no TASKS.md in the project, create one from the template at `${CLAUDE_PLUGIN_ROOT}/skills/octask/references/template.md`. Ask the user for a project title and first phase name, then fill in the template before adding the task.
 
 ### 2. Create the entry
 
@@ -29,7 +31,7 @@ Parse the args and conversation context, then use `Edit` to write the entry into
 - **Slug**: Generate a `#slug` from the title (3-4 lowercase hyphenated words). Must be unique.
 - **Status**: Default to `[ ]` (todo). If the user wants this done now (e.g. "do this", "start on this"), mark `[/]` and begin executing — this becomes a `/starting-task` flow.
 - **AC**: Always include one. Use the user's if provided; otherwise write a reasonable one yourself.
-- **Placement**: Append at the end of the target phase's task list. Follow the `/task-management` skill formatting.
+- **Placement**: Append at the end of the target phase's task list. Follow the `/octask` skill formatting.
 
 If a very similar task already exists, mention it briefly but still create unless it's clearly a duplicate.
 

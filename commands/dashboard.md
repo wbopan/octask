@@ -1,11 +1,11 @@
 ---
-description: Start the Task Management dashboard and open it in the browser
+description: Start the Octask Dashboard and open it in the browser
 allowed-tools: [Bash]
 ---
 
 # Dashboard
 
-Start the task management dashboard server and open it in a browser.
+Start the Octask Dashboard server and open it in a browser.
 
 ## Instructions
 

@@ -1,5 +1,5 @@
 ---
-name: task-management
+name: octask
 description: Phase-gate task management conventions for TASKS.md files. Use this skill whenever you are about to create, edit, update, or modify tasks in a TASKS.md file — including marking task status, adding new tasks, writing acceptance criteria, or restructuring phases. Also trigger when the user mentions TASKS.md, asks to add a todo, track progress, plan project phases, or manage task status. Even if you're just marking a single task as done, consult this skill first.
 ---
 

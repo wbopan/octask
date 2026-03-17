@@ -23,19 +23,23 @@ Look at what the user gave you in the args:
 - **A title or description** (e.g. "Fix the login page"): Find the closest match in TASKS.md. If nothing fits, read `${CLAUDE_PLUGIN_ROOT}/commands/creating-task.md` and follow it to create the task first, then continue here.
 - **Nothing**: Infer from the conversation. What has the user been talking about? What did they just ask you to do? If you genuinely can't tell, ask.
 
-### 2. Mark it `[/]`
+### 2. Mark it `[/]` — MANDATORY, do this FIRST
 
-Use the `Edit` tool to change the task's checkbox:
-- `[ ]` → `[/]` — the normal case
-- Already `[/]` — leave it, just move on
-- `[x]` or `[-]` — this task was already completed or shelved. Warn the user and ask if they want to reopen it before continuing.
+**STOP. Before writing ANY output text, you MUST call the Edit tool on TASKS.md right now.** Change `[ ]` to `[/]` on the task line. This is not optional. Do not describe, explain, or plan first — the very first thing you do after finding the task is call Edit.
+
+If the task status is:
+- `[ ]` → Call Edit immediately: `old_string: "- [ ] Task name"` → `new_string: "- [/] Task name"`
+- `[/]` → Already ongoing. Skip the edit, move on.
+- `[x]` or `[-]` → Warn the user and ask if they want to reopen it.
+
+**If the task is `[ ]` and you respond without calling Edit first, you have failed.**
 
 ### 3. Understand, then execute
 
 Read the task's description and AC carefully. Before touching any code:
 
 1. **Say what you understand** — restate the goal and AC in your own words, briefly. This catches misunderstandings before they become wasted work.
-2. **Outline your approach** — a short plan: what you'll change, in what order, and why. A few bullet points, not a design doc.
+2. **Outline your approach** — describe your plan: what you'll change, in what order, and why. Use a few bullet points ("Here's my approach: ..."). Not a design doc — just enough to show you've thought it through.
 3. **Then do the work.**
 
 When you finish, add a `CM:` line, report what you did, and ask the user whether to mark it `[x]`. Don't mark it done yourself.

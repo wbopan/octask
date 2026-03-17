@@ -116,7 +116,7 @@ app.get('/', async (req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Task Dashboard</title>
+  <title>Octask Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -196,7 +196,7 @@ app.get('/', async (req, res) => {
 </head>
 <body>
   <header>
-    <h1>Task Dashboard</h1>
+    <h1>Octask Dashboard</h1>
     <p>${projects.length} project${projects.length !== 1 ? 's' : ''} with TASKS.md</p>
   </header>
   ${projects.length ? `<div class="grid">${cards}</div>` : '<p class="empty">No projects with TASKS.md found.</p>'}
@@ -481,5 +481,5 @@ app.use((err, req, res, _next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Task Dashboard running at http://localhost:${PORT}`);
+  console.log(`Octask Dashboard running at http://localhost:${PORT}`);
 });

@@ -1,11 +1,11 @@
 {
-  "name": "task-management",
-  "description": "Phase-gate task management with TASKS.md kanban dashboard",
+  "name": "octask",
+  "description": "Octask — phase-gate task management with TASKS.md kanban dashboard",
   "version": "1.0.0",
   "author": {
     "name": "Wenbo Pan"
   },
-  "homepage": "https://github.com/anthropics/task-management-plugin",
-  "repository": "https://github.com/anthropics/task-management-plugin",
+  "homepage": "https://github.com/anthropics/octask",
+  "repository": "https://github.com/anthropics/octask",
   "license": "MIT"
 }

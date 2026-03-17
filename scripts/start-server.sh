@@ -6,7 +6,7 @@ PORT=3847
 
 # Check if server is already running
 if curl -s "http://localhost:${PORT}/api/health" >/dev/null 2>&1; then
-  echo "Task Dashboard already running at http://localhost:${PORT}"
+  echo "Octask Dashboard already running at http://localhost:${PORT}"
   exit 0
 fi
 
@@ -27,7 +27,7 @@ SERVER_PID=$!
 # Wait for server to be ready
 for i in $(seq 1 30); do
   if curl -s "http://localhost:${PORT}/api/health" >/dev/null 2>&1; then
-    echo "Task Dashboard started at http://localhost:${PORT} (PID: ${SERVER_PID})"
+    echo "Octask Dashboard started at http://localhost:${PORT} (PID: ${SERVER_PID})"
     exit 0
   fi
   sleep 0.2
