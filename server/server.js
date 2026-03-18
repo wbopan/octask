@@ -25,8 +25,25 @@ app.use((req, _res, next) => {
 app.use('/assets', express.static(ASSETS_DIR));
 app.use(express.json({ limit: '1mb' }));
 
-// In-memory heartbeat store: sessionId → { state, ts, pid }
+// Heartbeat store: sessionId → { state, ts, pid }
+// Persisted to disk so state survives server restarts.
+const HEARTBEAT_FILE = path.join(os.tmpdir(), 'octask-heartbeats.json');
 const heartbeats = new Map();
+
+function loadHeartbeats() {
+  try {
+    const data = fsSync.readFileSync(HEARTBEAT_FILE, 'utf8');
+    const obj = JSON.parse(data);
+    for (const [k, v] of Object.entries(obj)) heartbeats.set(k, v);
+  } catch {}
+}
+
+function saveHeartbeats() {
+  const obj = Object.fromEntries(heartbeats);
+  fsSync.writeFileSync(HEARTBEAT_FILE, JSON.stringify(obj), 'utf8');
+}
+
+loadHeartbeats();
 
 // Encode a filesystem path into Claude Code's project directory name.
 // This is the lossless forward direction: path → id.
@@ -224,6 +241,7 @@ app.post('/api/heartbeat', (req, res) => {
     const stateTs = (prev && prev.state === state) ? prev.stateTs : now;
     heartbeats.set(sessionId, { state, ts: now, stateTs, pid: pid || null });
   }
+  saveHeartbeats();
   res.json({ ok: true });
 });
 
@@ -281,6 +299,7 @@ app.get('/api/sessions/:projectId', async (req, res) => {
         }
       } else {
         heartbeats.delete(entry.sessionId);
+        saveHeartbeats();
       }
     }
 
