@@ -162,3 +162,16 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
+- [/] 侧边栏项目卡片指标改为数字统计 #sidebar-project-stats
+    将项目进度条下方的状态图标改为两组数字指标：(1) 未完成任务数量（icon + 数字）；(2) 当前活跃 session 数量，按状态分类显示（running/idle/permission/background，各自 icon + 数字）。风格保持 icon + 数字的简洁形式。
+    AC: 项目卡片进度条下方显示未完成任务计数和各状态 session 计数（icon+数字）；数据与实际 TASKS.md 和 session 状态一致；无活跃 session 时 session 区域显示 0 或隐藏。
+- [/] 优化 starting-task skill：防止跳过任务创建和过度激进执行 #fix-starting-task-aggression
+    当前 starting-task skill 有两个问题：(1) 模型有时不先创建任务就直接开始解决问题；(2) 更严重的是，skill 会导致模型变得过于激进，即使任务描述中写了 "plan first"，模型也会跳过规划直接开始执行代码修改。需要在 skill 文本中加强约束，确保模型先完成任务标记，再理解需求和制定计划，最后才动手。
+    AC: 模型调用 /starting-task 后，必须先在 TASKS.md 中标记任务为 ongoing，再展示理解和计划，最后才开始执行；不会跳过任务创建直接解决问题；任务描述中有 "plan first" 等指示时模型遵守而非忽略。
+- [ ] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
+    在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
+    AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
+- [x] 优化 creating-task skill 使其 self-contained #creating-task-self-contained
+    当前 creating-task skill 文本不够详细，执行该命令的模型可能没有读过 /octask skill，缺少 TASKS.md 格式规范（缩进、slug 位置、AC 格式等）。同时模型倾向于做大量代码阅读才创建任务，应限制为只读 TASKS.md。
+    CM: 重写 SKILL.md：内联完整的任务格式示例（slug、4-space 缩进、AC 行）和状态符号表，workflow 简化为"Read TASKS.md → Write entry → Confirm"，明确禁止读取其他文件。通过 2 轮 eval（6 runs each）验证：skill 版本正确检测重复任务、格式合规、token 效率高 18%。
+    AC: creating-task skill 内联完整的任务格式规范和示例，不依赖 /octask skill；模型执行时只读 TASKS.md 不探索代码库。
