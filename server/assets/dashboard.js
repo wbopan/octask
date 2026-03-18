@@ -33,7 +33,6 @@
       sections = undoStack.pop();
       lastCleanSnapshot = takeSnapshot();
       hasChanges = true;
-      $('saveBtn').disabled = false;
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(autoSave, 600);
       render();
@@ -1078,7 +1077,7 @@
     }
 
     // ===== GLOBAL ADD TASK =====
-    $('globalAddTaskBtn').addEventListener('click', () => {
+    $('fabAddTask').addEventListener('click', () => {
       if (!sections.length) return;
       openNewTaskModal(sections[0], 'canceled');
     });
@@ -1115,7 +1114,6 @@
       lastCleanSnapshot = takeSnapshot();
 
       hasChanges = true;
-      $('saveBtn').disabled = false;
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(autoSave, 600);
     }
@@ -1125,7 +1123,6 @@
       const md = toMarkdown();
       if (md === lastSavedMarkdown) {
         hasChanges = false;
-        $('saveBtn').disabled = true;
         return;
       }
       isSaving = true;
@@ -1140,7 +1137,6 @@
           throw new Error(body.error || `Server error (${res.status})`);
         }
         hasChanges = false;
-        $('saveBtn').disabled = true;
         saveRetryCount = 0;
         lastSavedMarkdown = md;
         if (!serverConnected) hideErrorBanner();
@@ -1374,7 +1370,6 @@
       activeSectionId = null;
       undoStack.length = 0;
       lastCleanSnapshot = null;
-      $('saveBtn').disabled = true;
 
       // Update URL
       history.pushState({}, '', '/project/' + encodeURIComponent(newProjectId));
@@ -1435,7 +1430,6 @@
     }).catch(() => {
       showOfflineState();
     });
-    $('saveBtn').addEventListener('click', autoSave);
 
     window.addEventListener('popstate', () => {
       const match = location.pathname.match(/^\/project\/(.+)/);
