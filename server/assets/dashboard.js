@@ -102,7 +102,7 @@
       p.innerHTML = 'Use <code style="font-family:var(--mono);font-size:14px;background:var(--bg-warm);border:1px solid var(--border);padding:6px 14px;border-radius:var(--radius-sm);margin-top:10px;color:var(--accent);user-select:all">/dashboard</code> in Claude Code to start the server.';
       $('emptyState').style.display = 'flex';
       $('sidebar').style.display = 'none';
-      $('boardArea').style.display = 'none';
+      $('boardWrapper').style.display = 'none';
       startHealthPolling();
     }
 
@@ -1259,7 +1259,7 @@
 
         $('emptyState').style.display = 'none';
         $('sidebar').style.display = 'flex';
-        $('boardArea').style.display = 'flex';
+        $('boardWrapper').style.display = 'flex';
 
         lastCleanSnapshot = takeSnapshot();
         undoStack.length = 0;
