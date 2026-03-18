@@ -63,9 +63,14 @@ Replace the amber/warm visual style with a modern, neutral aesthetic. The dashbo
 
 - **`:root` block**: Replace all CSS variable values with the new color system above.
 - **FAB shadow**: `rgba(196, 97, 60, 0.35)` → `rgba(13, 148, 136, 0.35)` (and hover variant).
-- **Shimmer animation**: Replace `#1a1917` → `#1a1a1a` in gradient stops.
-- **Session dots**: `#22c55e` (running) → `#4cb782`, `#f59e0b` (idle) → `#f2994a`. Permission purple `#a855f7` stays (or consider shifting to match indigo ongoing — optional).
-- **Hardcoded colors**: Search for any remaining `#f8f6f1`, `#c4613c`, `#1a1917`, `#e3e1da`, `#edebe5`, `#5c5b56`, `#6b6a65`, `#f3f0e8` references and replace with new equivalents.
+- **Shimmer animation**: Replace `#1a1917` → `#1a1a1a` and `#22c55e` → `#4cb782` in gradient stops. Also update `session-bg-active` shimmer highlight `#3b82f6` → `#5e6ad2`.
+- **Session dots**: `#22c55e` (running) → `#4cb782`, `#f59e0b` (idle) → `#f2994a`. Permission purple `#a855f7` stays.
+- **Session capsules**: Update all `.session-capsule` color variants:
+  - `.running`: `rgba(34, 197, 94, 0.12)` → `rgba(76, 183, 130, 0.12)`, `color: #16a34a` → `#4cb782`
+  - `.idle`: update amber values to `#f2994a` equivalents
+  - `.bg-active`: `rgba(59, 130, 246, 0.12)` → `rgba(94, 106, 210, 0.12)`, `color: #2563eb` → `#5e6ad2`
+- **Modal overlay**: `rgba(26,25,23,0.45)` → `rgba(26,26,26,0.45)` (neutralize warm tint).
+- **Hardcoded colors**: Search for any remaining `#f8f6f1`, `#c4613c`, `#1a1917`, `#e3e1da`, `#edebe5`, `#5c5b56`, `#6b6a65`, `#f3f0e8`, `#2563eb`, `#3b82f6` references and replace with new equivalents.
 
 ### 2. `server/assets/dashboard.html`
 
@@ -83,7 +88,11 @@ Replace the amber/warm visual style with a modern, neutral aesthetic. The dashbo
 - **Option B**: Use Google Fonts CDN link in `dashboard.html`. Simpler but adds external dependency.
 - Remove DM Sans and DM Mono font files from `server/assets/vendor/` after replacing.
 
-### 5. PWA icons (minor)
+### 5. `server/assets/dashboard.js`
+
+- **`STATUS_COLORS` object** (line ~45): Update from `{ ongoing: '#2563eb', todo: '#e09400', done: '#16a34a', canceled: '#94a3b8' }` to `{ ongoing: '#5e6ad2', todo: '#f2994a', done: '#4cb782', canceled: '#8b8f98' }`. These drive inline SVG icon stroke colors for every card and column header.
+
+### 6. PWA icons (minor)
 
 - `icon-maskable-192.png` and `icon-maskable-512.png`: Background color `#f8f6f1` → `#f7f7f5`. Minimal visual difference, low priority.
 
@@ -92,7 +101,7 @@ Replace the amber/warm visual style with a modern, neutral aesthetic. The dashbo
 - Layout structure (sidebar + board, FAB position)
 - Border radius values (`--radius: 10px`, `--radius-sm: 6px`)
 - Card structure, drag-drop, modals
-- All JavaScript logic
+- All JavaScript logic (except `STATUS_COLORS` color values)
 - Error banner red (`#dc2626`) — semantic error color
 - File changed banner amber (`#b45309`) — semantic warning color
 - Octopus favicon/icon body colors (coral on neutral = good brand contrast)
