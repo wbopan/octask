@@ -417,9 +417,18 @@
     }
 
     .board-header {
-      height: 20px;
+      padding: 24px 24px 16px;
       flex-shrink: 0;
       background: var(--bg);
+    }
+
+    .board-project-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin: 0;
+      line-height: 1.2;
     }
 
     .board-area {
@@ -436,11 +445,8 @@
       max-width: 420px;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid var(--border-light);
       overflow: hidden;
     }
-
-    .status-column:last-child { border-right: none; }
 
     .status-column-body {
       overflow: hidden;
@@ -480,7 +486,6 @@
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
-      border-bottom: 1px solid var(--border-light);
       background: var(--bg);
     }
 

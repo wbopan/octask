@@ -1255,7 +1255,10 @@
         }
 
         const projectName = window.__projectName || (allProjects.find(p => p.id === projectId) || {}).name;
-        if (projectName) document.title = `${projectName} — Octask`;
+        if (projectName) {
+          document.title = `${projectName} — Octask`;
+          $('boardProjectName').textContent = projectName;
+        }
 
         $('emptyState').style.display = 'none';
         $('sidebar').style.display = 'flex';
