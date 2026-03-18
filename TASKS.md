@@ -116,9 +116,6 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [-] 迁移到现代技术栈 #modernize-stack
     将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
     AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
-- [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
-    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
-    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
 - [x] 去掉 cli 改成 claude 命令 #remove-dashboard
     现在我们使用一个命令行工具来打开 dashboard。这个做法不太友好，正确的做法应该是增加一个 /dashboard 命令在 cc 中，然后这个命令让 CC 向用户呈现运行 dashboard 命令，或者建议让 claude 自己来运行，或者建议把它配置成一个一直运行的服务。
     CM: 重写 /dashboard 命令为完整流程（检查端口→启动→打开浏览器→建议 PWA）。移除 post-install 的全局 CLI symlink。更新 SKILL.md、README、dashboard.js 的 octask-dashboard 引用为 /dashboard。
@@ -155,11 +152,13 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     将 dashboard 从当前的顶部 header + 内容区布局改为纯双栏结构。移除顶部 header，将 logo 和 logo 文字移入左侧边栏顶部。去掉右上角的 New Task 和 Save 按钮，New Task 改为屏幕右下角的浮动圆形加号按钮（FAB）。
     CM: 删除顶部 header 及其 CSS/JS 引用（saveBtn×6、globalAddTaskBtn）。新增 FAB 按钮（固定右下角圆形+号）。board-area 包入 board-wrapper，顶部 board-header 显示项目名 h1。移除列间分隔线。最后移除 sidebar 中的 logo 和品牌文字，保持纯净双栏布局。
     AC: 页面无顶部 header 栏；logo 和项目名在左侧边栏顶部；右下角有浮动圆形加号按钮可创建新任务；原 Save 按钮功能不丢失（自动保存即可）。
-- [/] 视觉风格现代化：告别 amber 暖色调 #modernize-visual-style
+- [x] 视觉风格现代化：告别 amber 暖色调 #modernize-visual-style
     将 dashboard 的整体视觉风格从当前的 amber/暖白色调（#f8f6f1 背景、#c4613c 强调色）切换为更现代、中性的配色方案。涉及 CSS 变量（--bg、--accent、--border 等）、卡片样式、状态颜色、FAB、进度条等全局视觉元素。
+    CM: 整体配色从暖 amber 迁移到冷中性色系。背景 #f7f7f5，强调色 teal #0d9488，状态色采用 Linear 风格（indigo/柔橙/翠绿/灰）。字体从 DM Sans/Mono 换为 Plus Jakarta Sans + JetBrains Mono（自托管 woff2，fallback 到系统字体）。更新了 CSS 变量、硬编码颜色（FAB 阴影、shimmer 动画、session capsule、modal 遮罩）、JS STATUS_COLORS、HTML theme-color 和 manifest.json。
     AC: dashboard 整体配色不再以 amber/暖橙为主；视觉风格更接近现代 SaaS 产品（如 Linear、Notion）；所有 UI 元素配色协调一致。
-- [/] AI 创建任务 #creating-task-ai
-    使用 claude cli 来创建任务。
-- [/] 修复状态感知 #fix-state-sensing
+- [x] 修复状态感知 #fix-state-sensing
     为 session 增加后台进程检测。heartbeat 已上报 claude 进程 PID，server 端用 `pgrep -P <pid>` 查子进程数量即可判断有没有活跃的 background task 或 subagent。在 `/api/sessions/:projectId` 响应中增加 `childProcesses: number` 字段，dashboard ongoing 卡片展示后台活动指示器。
     AC: 有活跃后台进程的 ongoing 任务在 dashboard 上显示明确的后台活动标识；进程结束后标识消失。
+- [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
+    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
+    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
