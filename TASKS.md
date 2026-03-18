@@ -127,15 +127,23 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     类似 AC 的渲染方式，在任务卡片上也展示 CM（Completion Memo）字段。包括解析器提取 CM:、序列化器输出 CM:、卡片渲染绿色 CM 标签、编辑 modal 增加 CM 字段。
     CM: 新增卡片创建和编辑流程对 CM 的支持：解析器/序列化器能提取并写回 CM，卡片渲染新增绿色 CM 标签，编辑/新建弹窗均可填写 CM。
     AC: 含有 CM: 行的任务在 dashboard 卡片上显示绿色 CM 标签和内容；编辑 modal 可编辑 CM 字段；序列化后 CM: 行保留在 TASKS.md 中。
-- [ ] Allow Multiline AC and CM #fix-multiline-ac
-    现在的 AC 一个任务都只能出现一行，我们需要允许多行的 AC / CM，相当于允许有多个 acceptance criteria。具体方法就是多个 AC 开头的行。
-    sdsdss
-    sdsdsd
-    CM: 当前仍未完全修复：新增第三行 AC 或修改第二行时，保存到 TASKS.md 后内容会丢失/无法稳定持久化（仅部分行看得见，或刷新后恢复旧内容）。
-    AC: 创建一个测试任务，具有两行的 AC。在 dashboard 当中可以正确的渲染和编辑，储存以后 AC的结构依然保留.
 - [x] 卡片悬浮操作按钮重设计 #card-hover-actions-redesign
     重新设计卡片操作交互：hover 时整张卡片模糊化，浮现三个大按钮（终端打开、复制 ID、删除）。终端按钮根据 session 状态有不同行为：活跃 session → 聚焦 Ghostty tab；无活跃但有历史 session → 复制 `cd {path} && claude resume {id}`；无 session → 复制 `cd {path} && claude "/rename {slug}"`。删除按钮需确认弹窗。替换当前右上角的小图标按钮。
     AC: hover 卡片时背景模糊并显示三个操作按钮；终端按钮根据 session 状态执行对应操作；删除按钮点击后弹出确认弹窗；复制 ID 按钮复制任务 slug 到剪贴板。
 - [-] Dashboard UI 无法创建新任务 #fix-dashboard-create-task
     Dashboard 的创建任务功能（+ 按钮或 modal）无法正常工作，用户无法通过 UI 添加新任务。需要排查并修复。
     AC: 用户可以通过 Dashboard UI 的创建按钮成功添加新任务，任务正确写入 TASKS.md 并在看板上显示。
+- [/] 卡片操作按钮样式优化 #card-action-btn-style
+    当前卡片上的操作按钮太大、颜色各异不统一。缩小按钮尺寸并移至右上角；默认状态下按钮无颜色（灰色/无彩色），仅在 hover 时显示各自的彩色。
+    AC: 操作按钮位于卡片右上角且尺寸比当前更小；未 hover 时所有按钮为统一的无彩色样式；hover 单个按钮时该按钮显示对应彩色。
+- [ ] PWA 图标背景色改为页面背景色 #pwa-icon-bg
+    当前 maskable 图标（icon-maskable-192/512.png）背景为深橙棕色，与页面背景不协调。将图标背景色改为页面背景色 #f8f6f1（暖白），保留章鱼像素画主体不变。
+    AC: PWA 图标在 macOS Dock 和移动端主屏幕上显示时，背景为接近页面背景的浅暖白色而非深橙色。
+- [ ] 跳过无变化的写入 #skip-noop-save
+    当前任何操作（拖拽、编辑等）都会触发 markChanged → autoSave 写入，即使实际数据没有变化。应在 autoSave 中比较当前 toMarkdown() 输出与上次保存的内容，相同时跳过 PUT 请求。
+    AC: 在 dashboard 中进行不改变任何数据的操作（如拖拽卡片回原位、打开编辑弹窗后不修改直接保存）后，不会触发 PUT 写入请求。
+- [x] Allow Multiline AC and CM #fix-multiline-ac
+    现在的 AC 一个任务都只能出现一行，我们需要允许多行的 AC / CM，相当于允许有多个 acceptance criteria。具体方法就是多个 AC 开头的行。
+    sssss
+    CM: 修复 selfSaveSuppress 竞态条件（SSE 事件可能在 PUT 响应前到达，导致冲突横幅或意外重载）；为 AC/CM 字段添加 .trim() 保持与 desc 一致。多行 AC/CM 的解析、序列化和编辑流程经测试均正确。
+    AC: 创建一个测试任务，具有两行的 AC。在 dashboard 当中可以正确的渲染和编辑，储存以后 AC的结构依然保留.

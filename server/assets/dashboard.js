@@ -9,6 +9,7 @@
     let sessionMap = {}; // customTitle → { sessionId, status, summary }
     let hideDone = localStorage.getItem('octask-hide-done') !== 'false';
     let healthPollTimer = null;
+    let lastSessionSnapshot = null;
 
     // Undo stack — stores snapshots taken before each mutation
     const undoStack = [];
@@ -153,6 +154,28 @@
       return sessionMap[key] || sessionMap['#' + key] || null;
     }
 
+    function isDeepEqual(a, b) {
+      if (a === b) return true;
+      if (a == null || b == null || typeof a !== 'object' || typeof b !== 'object') return false;
+
+      const aKeys = Object.keys(a);
+      const bKeys = Object.keys(b);
+      if (aKeys.length !== bKeys.length) return false;
+
+      aKeys.sort();
+      bKeys.sort();
+      for (let i = 0; i < aKeys.length; i++) {
+        if (aKeys[i] !== bKeys[i]) return false;
+      }
+
+      for (const key of aKeys) {
+        const av = a[key];
+        const bv = b[key];
+        if (!isDeepEqual(av, bv)) return false;
+      }
+      return true;
+    }
+
     function getCurrentProjectPath() {
       const current = allProjects.find(p => p.id === projectId);
       return current?.path || '';
@@ -204,7 +227,7 @@
 
       const base = `cd ${shellQuote(projectPath)} && `;
       const cmd = session
-        ? `${base}claude resume ${shellQuote(session.sessionId || slug)}`
+        ? `${base}claude -r ${shellQuote(slug)}`
         : `${base}claude "/rename ${quoteForRename(slug)}"`;
 
       await copyToClipboard(cmd, button, session ? 'Resume command copied' : 'Rename command copied');
@@ -663,6 +686,16 @@
         actions.appendChild(copyBtn);
       }
 
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      editBtn.innerHTML = '<i data-lucide="pencil"></i>';
+      editBtn.title = 'Edit';
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditTaskModal(task, section);
+      });
+      actions.appendChild(editBtn);
+
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
       delBtn.innerHTML = '<i data-lucide="x"></i>';
@@ -920,8 +953,8 @@
           title,
           slug: $('mSlug').value.trim().replace(/^#/, ''),
           desc: $('mDesc').value.trim(),
-          ac: ($('mAc').value || '').replace(/\r\n?/g, '\n'),
-          cm: ($('mCm').value || '').replace(/\r\n?/g, '\n'),
+          ac: ($('mAc').value || '').replace(/\r\n?/g, '\n').trim(),
+          cm: ($('mCm').value || '').replace(/\r\n?/g, '\n').trim(),
           status: selStatus ? selStatus.dataset.status : defaultStatus,
           sectionId: selSection.id
         });
@@ -987,8 +1020,8 @@
         task.slug = $('mSlug').value.trim().replace(/^#/, '');
         task.status = selStatus ? selStatus.dataset.status : task.status;
         task.desc = $('mDesc').value.trim();
-        task.ac = ($('mAc').value || '').replace(/\r\n?/g, '\n');
-        task.cm = ($('mCm').value || '').replace(/\r\n?/g, '\n');
+        task.ac = ($('mAc').value || '').replace(/\r\n?/g, '\n').trim();
+        task.cm = ($('mCm').value || '').replace(/\r\n?/g, '\n').trim();
 
         // Handle section move
         if (hasNamedSections && $('mSection')) {
@@ -1265,7 +1298,13 @@
       try {
         const resp = await fetch(`/api/sessions/${encodeURIComponent(projectId)}`);
         if (resp.ok) {
-          sessionMap = await resp.json();
+          const nextSessionMap = await resp.json();
+          const isChanged = !isDeepEqual(lastSessionSnapshot, nextSessionMap);
+          if (isChanged) {
+            sessionMap = nextSessionMap;
+            lastSessionSnapshot = JSON.parse(JSON.stringify(nextSessionMap));
+            render();
+          }
           if (!serverConnected) hideErrorBanner();
         }
       } catch {
@@ -1361,8 +1400,9 @@
     // Patch autoSave to suppress self-triggered watch events
     const _origAutoSave = autoSave;
     autoSave = async function() {
+      selfSaveSuppress = Date.now() + 2000; // suppress before PUT to cover SSE race
       await _origAutoSave();
-      selfSaveSuppress = Date.now() + 500;
+      selfSaveSuppress = Date.now() + 500; // refresh window after completion
     };
 
     fetchProjects().then(() => {
@@ -1378,8 +1418,11 @@
       }
 
       loadProject().then(() => {
-        fetchSessions().then(render);
-        setInterval(async () => { await fetchSessions(); render(); }, 5000);
+        fetchSessions().then(() => {
+          lastSessionSnapshot = JSON.parse(JSON.stringify(sessionMap));
+          render();
+        });
+        setInterval(fetchSessions, 5000);
         setInterval(fetchUsage, 120000);
         connectFileWatch();
       });

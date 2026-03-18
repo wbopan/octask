@@ -576,14 +576,9 @@
 
     .task-card-content {
       position: relative;
-      transition: filter 0.18s ease, opacity 0.18s ease;
-      will-change: filter, opacity;
+      transition: opacity 0.18s ease;
     }
 
-    .task-card:hover .task-card-content {
-      filter: blur(1.6px);
-      opacity: 0.62;
-    }
 
     .task-card.dragging {
       opacity: 0.4;
@@ -723,19 +718,19 @@
 
     .task-card-actions {
       position: absolute;
-      inset: 0;
+      top: 4px;
+      right: 4px;
       margin: 0;
-      padding: 0 14px;
+      padding: 3px;
       border-radius: var(--radius);
+      border: 1px solid var(--border);
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
+      gap: 3px;
       opacity: 0;
       pointer-events: none;
-      background: color-mix(in srgb, var(--bg-card) 56%, transparent);
-      backdrop-filter: blur(3px);
-      transition: opacity 0.18s ease;
+      backdrop-filter: blur(4px);
+      transition: opacity 0.15s ease;
       z-index: 1;
     }
 
@@ -745,20 +740,19 @@
     }
 
     .task-card-actions button {
-      background: rgba(255, 255, 255, 0.93);
-      border: 1px solid var(--border);
+      background: transparent;
+      border: none;
       color: var(--text-muted);
       cursor: pointer;
-      width: 42px;
-      height: 42px;
+      width: 30px;
+      height: 30px;
       padding: 0;
       line-height: 1;
-      border-radius: 10px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s ease, transform 0.15s ease;
-      box-shadow: var(--shadow-sm);
+      transition: color 0.15s ease, background 0.15s ease;
     }
     .task-card-actions button[disabled] {
       opacity: 0.32;
@@ -766,43 +760,33 @@
       pointer-events: none;
     }
     .task-card-actions button svg {
-      width: 21px;
-      height: 21px;
+      width: 17px;
+      height: 17px;
       flex-shrink: 0;
     }
-    .task-card-actions button:hover {
-      color: var(--accent);
-      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
-      background: color-mix(in srgb, var(--accent) 10%, #fff);
-      transform: translateY(-1px);
-    }
 
-    .task-card-actions button.terminal-btn {
-      border-color: color-mix(in srgb, var(--status-ongoing) 35%, var(--border));
+    .task-card-actions button.terminal-btn:hover {
       color: var(--status-ongoing);
+      background: color-mix(in srgb, var(--status-ongoing) 12%, transparent);
     }
-    .task-card-actions button.terminal-btn.terminal-active {
-      background: color-mix(in srgb, var(--status-ongoing) 14%, rgba(255, 255, 255, 0.93));
-    }
-    .task-card-actions button.terminal-btn.terminal-history {
+    .task-card-actions button.terminal-btn.terminal-history:hover {
       color: var(--status-todo);
-      border-color: color-mix(in srgb, var(--status-todo) 35%, var(--border));
-      background: color-mix(in srgb, var(--status-todo) 8%, rgba(255, 255, 255, 0.93));
+      background: color-mix(in srgb, var(--status-todo) 12%, transparent);
     }
-    .task-card-actions button.terminal-btn.terminal-no-session {
+    .task-card-actions button.terminal-btn.terminal-no-session:hover {
       color: var(--status-canceled);
-      border-color: color-mix(in srgb, var(--status-canceled) 35%, var(--border));
-      background: color-mix(in srgb, var(--status-canceled) 8%, rgba(255, 255, 255, 0.93));
+      background: color-mix(in srgb, var(--status-canceled) 12%, transparent);
     }
 
-    .task-card-actions button.delete-btn {
-      color: var(--status-canceled);
-      border-color: color-mix(in srgb, var(--status-canceled) 35%, var(--border));
+    .task-card-actions button.copy-id-btn:hover,
+    .task-card-actions button.edit-btn:hover {
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
     }
+
     .task-card-actions button.delete-btn:hover {
       color: #ef4444;
-      border-color: #ef4444;
-      background: color-mix(in srgb, #ef4444 10%, #fff);
+      background: color-mix(in srgb, #ef4444 12%, transparent);
     }
 
     .task-card-actions button:focus-visible {
