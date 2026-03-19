@@ -1,14 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="23.3" y1="-21.3" x2="488.7" y2="533.3" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#1e1b4b"/>
-      <stop offset="45%" stop-color="#14594f"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a3a5c"/>
+      <stop offset="40%" stop-color="#115e59"/>
       <stop offset="100%" stop-color="#0d9488"/>
     </linearGradient>
-    <filter id="s1"><feDropShadow dx="0" dy="2" stdDeviation="15" flood-opacity="0.5"/></filter>
-    <filter id="s2"><feDropShadow dx="0" dy="1" stdDeviation="9" flood-opacity="0.35"/></filter>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <path d="M 267.88,71.40 A 30,30 0 0 0 289.59,78.88 L 367.83,148.10 A 30,30 0 0 0 377.90,168.74 L 384.28,273.00 A 30,30 0 0 0 376.80,294.71 L 307.58,372.95 A 30,30 0 0 0 286.94,383.02 L 182.68,389.40 A 30,30 0 0 0 160.97,381.92 L 82.73,312.70 A 30,30 0 0 0 72.66,292.06 L 66.28,187.80 A 30,30 0 0 0 73.76,166.09 L 142.98,87.85 A 30,30 0 0 0 163.62,77.78 Z" fill="rgba(255,255,255,0.38)" filter="url(#s1)"/>
-  <path d="M 329.32,122.60 A 30,30 0 0 0 351.03,130.08 L 429.27,199.30 A 30,30 0 0 0 439.34,219.94 L 445.72,324.20 A 30,30 0 0 0 438.24,345.91 L 369.02,424.15 A 30,30 0 0 0 348.38,434.22 L 244.12,440.60 A 30,30 0 0 0 222.41,433.12 L 144.17,363.90 A 30,30 0 0 0 134.10,343.26 L 127.72,239.00 A 30,30 0 0 0 135.20,217.29 L 204.42,139.05 A 30,30 0 0 0 225.06,128.98 Z" fill="rgba(255,255,255,0.89)" filter="url(#s2)"/>
+  <g transform="translate(256,256) scale(20.5)">
+    <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.77 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
+          transform="translate(-12,-12)"
+          fill="rgba(255,255,255,0.93)" stroke="none"/>
+    <path d="m9 12 2 2 4-4"
+          transform="translate(-12,-12)"
+          fill="none" stroke="#115e59"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
