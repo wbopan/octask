@@ -184,7 +184,7 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     Project Sidebar 卡片下方的筛选状态指标只显示 ongoing 和 todo（pending）项目的统计，忽略 backlog 和 done 中的项目状态。
     CM: Section 列表的 mini-stat 图标从 STATUS_ORDER（4 种状态）改为只显示 ongoing 和 todo；section 计数从 total 改为 ongoing+todo。项目级 buildProjStatsHtml 已是 ongoing+todo 无需修改。
     AC: 侧边栏项目卡片的状态统计只包含 ongoing 和 todo 任务数量；backlog 和 done 的任务不计入显示的数字。
-- [ ] 重新设计应用图标 #redesign-app-icon
+- [/] 重新设计应用图标 #redesign-app-icon
     基于 Lucide icon badge-check 设计新图标，替换当前的八边形图标。需要符合 Apple Human Interface Guidelines（圆角正方形、光影层次、适配 dark mode）和 Chrome Web Store / PWA icon 最佳实践（清晰轮廓、maskable safe zone、多尺寸适配 192/512）。输出 SVG 源文件及 PNG 导出（icon-192.png、icon-512.png、icon-maskable-192.png、icon-maskable-512.png）。
     AC: 图标基于 badge-check 造型；符合 Apple 和 Chrome icon 设计规范（safe zone、圆角、清晰辨识度）；所有尺寸文件已替换且 dashboard/PWA manifest 显示正确。
 - [x] 代码质量审查与修复 #code-quality-review
@@ -195,3 +195,7 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前后端有多个冗余端点（/api/projects、/api/tasks/:id、/api/sessions/:id、/api/heartbeat），数据模型混乱（stats 可从 content 算出、session 数据来源不统一）。合并为两个核心端点：(1) GET /api/state — 返回所有项目的完整状态（content、task→session 映射），支持增量更新避免重复传输未变化的 content；(2) PUT /api/tasks/:id — 更新单个项目的 TASKS.md。前端轮询 /api/state 一个请求刷新所有数据，不再需要多个并行请求。
     CM: 提取 buildSessionMap() 复用 jsonl grep + PID + pgrep 逻辑。新增 GET /api/state 返回 { projects: [{ id, name, path, content, stats, sessions, sessionMap }] }，sessions 聚合从 sessionMap 派生（正确计算 bg-active = idle + childProcesses > 0）。删除 GET /api/projects、GET /api/tasks/:projectId、GET /api/sessions/:projectId 三个旧端点及 getProjectSessionCounts() helper。前端用 fetchState() 替代 fetchProjects() + fetchSessions()，boot/polling/SSE/switchProject 全部走 /api/state。项目切换零网络请求。
     AC: 后端只有 /api/state 和 PUT /api/tasks/:id 两个数据端点（加 heartbeat 接收）；前端用单个轮询请求获取所有项目的完整状态；切换项目零网络请求；现有功能不丢失。
+- [x] 修复项目列表状态统计忽略 backlog 和 done 的 bug #fix-project-stats-ignore-statuses
+    Project list 的 session capsule 统计（running/idle/permission）错误地包含了 backlog 和 done 任务的 session。
+    CM: 在 server.js /api/state 的 session 聚合逻辑中，先从 content 提取 ongoing/todo 的 task slug 集合（匹配 `^- \[[ /]\]`），聚合时跳过不在集合中的 session。
+    AC: 项目列表的 session 状态 capsule 只统计 ongoing 和 todo 任务的 session；done 和 backlog 任务的 session 不计入。
