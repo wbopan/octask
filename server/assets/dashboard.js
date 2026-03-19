@@ -506,7 +506,7 @@
           item.innerHTML = `
             <div class="section-item-header">
               <span class="section-item-name">${escapeHtml(section.name)}</span>
-              <span class="section-item-count">${total}</span>
+              <span class="section-item-count">${stats.ongoing + stats.todo}</span>
             </div>
             <div class="section-item-bar">
               ${total > 0 ? `
@@ -515,7 +515,7 @@
               ` : ''}
             </div>
             <div class="section-item-counts">
-              ${STATUS_ORDER.filter(st => stats[st] > 0).map(st =>
+              ${['ongoing', 'todo'].filter(st => stats[st] > 0).map(st =>
                 `<span class="section-mini-stat">${statusIcon(st)}${stats[st]}</span>`
               ).join('')}
             </div>
@@ -1092,6 +1092,7 @@
     // ===== QUICK CREATE BAR =====
     const quickInput = $('quickCreateInput');
     const quickBar = $('quickCreateBar');
+    const quickFab = $('quickCreateFab');
     let quickCreateKeepOpen = false;
 
     function expandQuickBar() {
@@ -1104,9 +1105,25 @@
       quickBar.classList.remove('expanded');
     }
 
-    $('quickCreateFab').addEventListener('click', (e) => {
+    async function copyQuickCreateCmd() {
+      const desc = quickInput.value.trim();
+      if (!desc) { showStatus('Enter a task description first', true); quickInput.focus(); return; }
+      const projectPath = getCurrentProjectPath();
+      if (!projectPath) { showStatus('Project path unavailable', true); return; }
+      const cmd = `cd ${shellQuote(projectPath)} && claude ${shellQuote('/creating-task ' + desc)}`;
+      await copyToClipboard(cmd, quickFab, 'Command copied — paste in terminal');
+      collapseQuickBar();
+    }
+
+    // FAB: expand when collapsed, copy when expanded
+    quickFab.addEventListener('click', (e) => {
       e.stopPropagation();
-      expandQuickBar();
+      if (quickBar.classList.contains('expanded')) {
+        quickCreateKeepOpen = true;
+        copyQuickCreateCmd();
+      } else {
+        expandQuickBar();
+      }
     });
 
     quickInput.addEventListener('blur', () => {
@@ -1119,21 +1136,11 @@
     quickInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        $('quickCreateCopy').click();
+        quickCreateKeepOpen = true;
+        copyQuickCreateCmd();
       } else if (e.key === 'Escape') {
         collapseQuickBar();
       }
-    });
-
-    $('quickCreateCopy').addEventListener('click', async () => {
-      quickCreateKeepOpen = true;
-      const desc = quickInput.value.trim();
-      if (!desc) { showStatus('Enter a task description first', true); quickInput.focus(); return; }
-      const projectPath = getCurrentProjectPath();
-      if (!projectPath) { showStatus('Project path unavailable', true); return; }
-      const cmd = `cd ${shellQuote(projectPath)} && claude ${shellQuote('/creating-task ' + desc)}`;
-      await copyToClipboard(cmd, $('quickCreateCopy'), 'Command copied — paste in terminal');
-      collapseQuickBar();
     });
 
     $('quickCreateEditor').addEventListener('click', () => {
