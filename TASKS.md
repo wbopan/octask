@@ -174,9 +174,6 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [-] 迁移到现代技术栈 #modernize-stack
     将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
     AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
-- [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
-    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
-    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
 - [x] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
     在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
     AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
@@ -199,3 +196,6 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     Project list 的 session capsule 统计（running/idle/permission）错误地包含了 backlog 和 done 任务的 session。
     CM: 在 server.js /api/state 的 session 聚合逻辑中，先从 content 提取 ongoing/todo 的 task slug 集合（匹配 `^- \[[ /]\]`），聚合时跳过不在集合中的 session。
     AC: 项目列表的 session 状态 capsule 只统计 ongoing 和 todo 任务的 session；done 和 backlog 任务的 session 不计入。
+- [/] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
+    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
+    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
