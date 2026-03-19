@@ -24,5 +24,4 @@ rsync -a --delete \
 if [ -f "$CACHE/server/package.json" ]; then
   cd "$CACHE/server" && npm install --production --silent 2>/dev/null
 fi
-
 echo "Synced to $CACHE"

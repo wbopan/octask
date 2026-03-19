@@ -4,4 +4,3 @@ node_modules/
 .worktrees/
 .claude/worktrees/
 TASKS.md
-server/assets/vendor/

@@ -1,15 +1,17 @@
-const CACHE_NAME = 'octask-v2';
+const CACHE_NAME = 'octask-v3';
 const SHELL_URLS = [
   '/offline',
   '/assets/dashboard.css',
   '/assets/dashboard.js',
-  '/assets/vendor/fonts.css',
-  '/assets/vendor/lucide.min.js',
 ];
 
 self.addEventListener('install', (evt) => {
   evt.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(SHELL_URLS.map((url) =>
+        fetch(url).then((res) => res.ok && cache.put(url, res))
+      ))
+    )
   );
   self.skipWaiting();
 });
@@ -42,7 +44,8 @@ self.addEventListener('fetch', (evt) => {
     caches.match(evt.request).then((cached) => {
       const fresh = fetch(evt.request).then((response) => {
         if (response.ok) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(evt.request, response.clone()));
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(evt.request, cloned));
         }
         return response;
       });
