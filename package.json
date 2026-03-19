@@ -1,6 +1,6 @@
 {
   "name": "task-management-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A Claude Code plugin that adds task management via `TASKS.md` files and a real-time kanban dashboard.",
   "type": "module",
   "directories": {
