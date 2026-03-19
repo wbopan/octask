@@ -1189,41 +1189,104 @@
       animation: fade-up 0.3s ease both;
     }
 
-/* ===== FAB ===== */
-.fab {
+/* ===== QUICK CREATE BAR ===== */
+.quick-create-bar {
   position: fixed;
-  bottom: 28px;
+  bottom: 20px;
   right: 28px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: white;
+  left: calc(var(--sidebar-width, 350px) + 28px);
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 8px 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  z-index: 100;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.quick-create-bar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.06);
+}
+
+.quick-create-plus {
+  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.quick-create-bar:focus-within .quick-create-plus {
+  color: var(--accent);
+}
+
+.quick-create-input {
+  flex: 1;
   border: none;
-  cursor: pointer;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  min-width: 0;
+}
+
+.quick-create-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.quick-create-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.quick-create-bar:focus-within .quick-create-actions,
+.quick-create-bar.has-content .quick-create-actions {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.quick-create-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
-  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-  z-index: 100;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
   padding: 0;
 }
 
-.fab:hover {
-  background: var(--accent-hover);
-  transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+.quick-create-btn.editor {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.quick-create-btn.editor:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.quick-create-btn.copy {
+  background: var(--accent);
   border: none;
+  color: white;
 }
 
-.fab:active {
-  transform: scale(0.95);
-}
-
-.fab svg {
-  width: 28px;
-  height: 28px;
+.quick-create-btn.copy:hover {
+  background: var(--accent-hover);
 }
 
 @media (display-mode: standalone) {
