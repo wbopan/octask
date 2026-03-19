@@ -19,10 +19,10 @@
       --status-ongoing: #5e6ad2;
       --status-done: #4cb782;
       --status-canceled: #8b8f98;
-      --radius-lg: 18px;
-      --radius: 14px;
-      --radius-sm: 10px;
-      --radius-xs: 6px;
+      --radius-lg: 24px;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --radius-xs: 8px;
       --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     }
