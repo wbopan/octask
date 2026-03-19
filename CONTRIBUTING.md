@@ -21,8 +21,7 @@ The dashboard runs at `http://localhost:3847`.
 ## Project Structure
 
 - `server/` — Express server and dashboard assets (HTML/CSS/JS, no build step)
-- `skills/octask/` — TASKS.md skill spec and template
-- `commands/` — Slash command definitions (`/dashboard`, `/starting-task`, `/creating-task`)
+- `skills/` — Skills: `octask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`
 - `hooks/` — Lifecycle hooks (heartbeat reporting)
 - `scripts/` — Helper scripts (start server, sync to cache)
 - `evals/` — Eval suite for skill behavior testing

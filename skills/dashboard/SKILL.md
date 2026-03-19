@@ -1,4 +1,5 @@
 ---
+name: dashboard
 description: Start the Octask Dashboard and open it in the browser
 allowed-tools: [Bash]
 ---

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Octask — a Claude Code plugin that adds task management via `TASKS.md` files and a real-time kanban dashboard. Installed as a Claude Code plugin, it provides slash commands (`/dashboard`, `/starting-task`), hooks (heartbeat reporting), and a skill (TASKS.md conventions).
+Octask — a Claude Code plugin that adds task management via `TASKS.md` files and a real-time kanban dashboard. Installed as a Claude Code plugin, it provides skills (`/octask`, `/dashboard`, `/starting-task`, `/creating-task`), hooks (heartbeat reporting), and a dashboard server.
 
 ## Development Commands
 
@@ -29,8 +29,7 @@ claude evals run evals/evals.json
 The plugin is discovered via `.claude-plugin/plugin.json`. It registers:
 
 - **Hooks** (`hooks/hooks.json`): `heartbeat.sh` runs async on 6 lifecycle events (SessionStart, UserPromptSubmit, PostToolUse, Stop, Notification, SessionEnd), POSTing session state (`idle`/`running`/`permission`/`notfound`) to `localhost:3847/api/heartbeat`.
-- **Slash commands** (`commands/`): `/dashboard` starts the server and opens the browser; `/starting-task` finds a task by slug, marks it `[/]`, and begins execution.
-- **Skill** (`skills/octask/SKILL.md`): Defines the full TASKS.md convention — status symbols, AC rules, completion workflow. This is the source of truth for how AI should read/write TASKS.md.
+- **Skills** (`skills/`): `octask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`. All are skills (not commands) so they're invoked as `/creating-task` without a `pluginName:` prefix.
 - **Post-install** (`hooks/post-install.sh`): Runs `npm install` in `server/` and downloads bundled UI assets.
 
 ### Server (`server/server.js`)
@@ -69,7 +68,10 @@ Three files (HTML structure, CSS, JS), no framework or build tooling. Key intern
 |---------|------|
 | Plugin manifest | `.claude-plugin/plugin.json` |
 | Hook definitions | `hooks/hooks.json` |
-| Skill spec | `skills/octask/SKILL.md` |
+| Octask skill | `skills/octask/SKILL.md` |
+| Creating-task skill | `skills/creating-task/SKILL.md` |
+| Starting-task skill | `skills/starting-task/SKILL.md` |
+| Dashboard skill | `skills/dashboard/SKILL.md` |
 | TASKS.md template | `skills/octask/references/template.md` |
 | Eval suite | `evals/evals.json` |
 | Eval fixture | `evals/test-fixture-tasks.md` |
