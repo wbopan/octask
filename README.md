@@ -14,7 +14,7 @@ A Claude Code plugin that adds task management via `TASKS.md` files and a real-t
 First, add the marketplace:
 
 ```bash
-claude plugins add-marketplace https://github.com/wbopan/octask.git
+claude plugins add-marketplace https://github.com/wbopan/octask-marketplace.git
 ```
 
 Then install the plugin:
