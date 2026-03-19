@@ -332,7 +332,7 @@ app.post('/api/focus-ghostty-tab', async (req, res) => {
   }
 
   // Use Ghostty 1.3.0 native AppleScript API instead of System Events UI hack
-  const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
   const script = `
 tell application "Ghostty"
   set allWindows to every window
@@ -513,6 +513,6 @@ setInterval(() => {
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
-server = app.listen(PORT, () => {
+server = app.listen(PORT, '127.0.0.1', () => {
   console.log(`Octask Dashboard running at http://localhost:${PORT}`);
 });
