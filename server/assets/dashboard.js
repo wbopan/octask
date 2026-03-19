@@ -1098,7 +1098,7 @@
       if (!desc) { showStatus('Enter a task description first', true); quickInput.focus(); return; }
       const projectPath = getCurrentProjectPath();
       if (!projectPath) { showStatus('Project path unavailable', true); return; }
-      const cmd = `cd ${shellQuote(projectPath)} && claude "/creating-task ${desc.replace(/"/g, '\\"')}"`;
+      const cmd = `cd ${shellQuote(projectPath)} && claude ${shellQuote('/creating-task ' + desc)}`;
       await copyToClipboard(cmd, $('quickCreateCopy'), 'Command copied — paste in terminal');
       quickInput.value = '';
       updateQuickBarState();
