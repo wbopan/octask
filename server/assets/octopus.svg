@@ -7,7 +7,7 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <g transform="translate(256,256) scale(20.5)">
+  <g transform="translate(256,256) scale(17.4)">
     <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.77 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
           transform="translate(-12,-12)"
           fill="rgba(255,255,255,0.93)" stroke="none"/>
