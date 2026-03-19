@@ -25,6 +25,11 @@
       --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
+    /* [1] Smooth macOS-style corners (Chrome 139+) */
+    @supports (corner-shape: squircle) {
+      :root { corner-shape: squircle; }
+    }
+
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -411,6 +416,8 @@
       color: var(--text);
       margin: 0;
       line-height: 1.2;
+      /* [4] View Transitions */
+      view-transition-name: project-title;
     }
 
     .board-area {
@@ -419,8 +426,11 @@
       overflow-x: hidden;
       overflow-y: hidden;
       min-width: 0;
+      /* [4] View Transitions */
+      view-transition-name: board-area;
     }
 
+    /* [10] Container queries for responsive task cards */
     .status-column {
       flex: 1;
       min-width: 260px;
@@ -428,6 +438,8 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      container-type: inline-size;
+      container-name: column;
     }
 
     .status-column-body {
@@ -877,19 +889,57 @@
 
     .empty-overlay button:hover { background: var(--accent-hover); }
 
-    /* ===== MODAL ===== */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(26,26,26,0.45);
-      z-index: 200;
+    /* ===== MODAL (native <dialog>) ===== */
+    /* [8] Native <dialog> with [2] @starting-style entry/exit animation */
+    dialog.modal-dialog {
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      max-width: 100%;
+      height: 100%;
+      max-height: 100%;
+      display: flex;
       align-items: center;
       justify-content: center;
-      backdrop-filter: blur(2px);
+      opacity: 1;
+      transition: opacity 0.2s ease,
+                  overlay 0.2s allow-discrete,
+                  display 0.2s allow-discrete;
     }
 
-    .modal-overlay.visible { display: flex; }
+    dialog.modal-dialog:not([open]) {
+      opacity: 0;
+      display: none;
+    }
+
+    dialog.modal-dialog::backdrop {
+      background: rgba(26,26,26,0.45);
+      backdrop-filter: blur(2px);
+      opacity: 1;
+      transition: opacity 0.2s ease,
+                  overlay 0.2s allow-discrete,
+                  display 0.2s allow-discrete;
+    }
+
+    @starting-style {
+      dialog.modal-dialog[open] {
+        opacity: 0;
+      }
+      dialog.modal-dialog[open]::backdrop {
+        opacity: 0;
+      }
+    }
+
+    dialog.modal-dialog[open] .modal {
+      animation: modal-enter 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes modal-enter {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
 
     .modal {
       background: var(--bg-card);
@@ -1351,4 +1401,105 @@
   border-radius: var(--radius-sm);
   margin-top: 10px;
   color: var(--accent);
+}
+
+/* ===== [3] CSS Anchor Positioning — tooltips for sidebar actions ===== */
+@supports (anchor-name: --a) {
+  .section-item-actions button {
+    anchor-name: --sidebar-action;
+    position: relative;
+  }
+  .section-item-actions button::after {
+    content: attr(data-tooltip);
+    position: fixed;
+    position-anchor: --sidebar-action;
+    top: anchor(bottom);
+    left: anchor(center);
+    translate: -50% 4px;
+    background: var(--text);
+    color: var(--bg);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 100;
+  }
+  .section-item-actions button:hover::after {
+    opacity: 1;
+  }
+}
+
+/* ===== [5] sibling-index() staggered card entrance (Chrome 134+) ===== */
+@supports (animation-delay: calc(sibling-index() * 1ms)) {
+  .task-card.card-enter {
+    animation-delay: calc(sibling-index() * 30ms);
+  }
+}
+
+/* ===== [6] Scroll-driven card reveal (Chrome 115+) ===== */
+@supports (animation-timeline: view()) {
+  .section-group-header {
+    animation: header-scroll-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 100%;
+  }
+}
+
+@keyframes header-scroll-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ===== [7] Window Controls Overlay — custom title bar ===== */
+@media (display-mode: window-controls-overlay) {
+  .board-header {
+    padding-top: max(20px, env(titlebar-area-height, 20px));
+    padding-left: calc(env(titlebar-area-x, 0px) + env(titlebar-area-width, 0px) + 16px);
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+  .board-header h1,
+  .board-header button,
+  .board-header input,
+  .board-header a {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+  .sidebar {
+    padding-top: env(titlebar-area-height, 0px);
+  }
+}
+
+/* ===== [9] Accessibility: prefers-reduced-motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== [10] Container queries for compact task cards ===== */
+@container column (max-width: 300px) {
+  .task-card-ac,
+  .task-card-cm {
+    display: none;
+  }
+  .task-card-desc {
+    -webkit-line-clamp: 1;
+  }
+  .task-card-actions button {
+    width: 26px;
+    height: 26px;
+  }
+  .task-card-actions button svg {
+    width: 14px;
+    height: 14px;
+  }
 }
