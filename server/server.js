@@ -219,13 +219,15 @@ async function buildSessionMap(projectId) {
 app.get('/api/state', async (req, res) => {
   const discovered = await discoverProjects();
 
-  // Determine which projects have live heartbeats (avoid expensive jsonl grep for inactive ones)
-  const activeProjectIds = new Set();
+  // Determine which projects have live heartbeats (avoid expensive jsonl grep for inactive ones).
+  // Collect alive heartbeat cwds so we can prefix-match against project paths
+  // (heartbeat cwd may be a subdirectory of the project root).
+  const aliveCwds = [];
   for (const [, hb] of heartbeats) {
     if (!hb.cwd) continue;
     let alive = true;
     if (hb.pid) { try { process.kill(hb.pid, 0); } catch { alive = false; } }
-    if (alive) activeProjectIds.add(encodeProjectPath(hb.cwd));
+    if (alive) aliveCwds.push(hb.cwd);
   }
 
   const projects = await Promise.all(discovered.map(async (p) => {
@@ -244,10 +246,18 @@ app.get('/api/state', async (req, res) => {
     let sessionMap = null;
     let sessions = { running: 0, idle: 0, permission: 0, 'bg-active': 0 };
 
-    if (activeProjectIds.has(p.id)) {
+    const projectActive = aliveCwds.some(cwd => cwd === p.path || cwd.startsWith(p.path + '/'));
+    if (projectActive) {
       sessionMap = await buildSessionMap(p.id);
-      // Derive aggregate counts from sessionMap (bg-active = idle + childProcesses > 0)
-      for (const s of Object.values(sessionMap)) {
+      // Build set of task slugs that are ongoing or todo (exclude done/backlog)
+      const activeTaskSlugs = new Set();
+      for (const line of content.split('\n')) {
+        const m = line.match(/^- \[[ /]\] .+#([\w-]+)\s*$/);
+        if (m) activeTaskSlugs.add(m[1]);
+      }
+      // Derive aggregate counts from sessionMap, only for ongoing/todo tasks
+      for (const [title, s] of Object.entries(sessionMap)) {
+        if (!activeTaskSlugs.has(title)) continue;
         const isBgActive = s.status === 'idle' && s.childProcesses > 0;
         const key = isBgActive ? 'bg-active' : s.status;
         if (key in sessions) sessions[key]++;
