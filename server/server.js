@@ -156,14 +156,77 @@ app.get('/', async (req, res) => {
   }
 });
 
-// GET /api/projects — list all discovered projects with TASKS.md stats
-app.get('/api/projects', async (req, res) => {
-  const projects = await discoverProjects();
-  const result = [];
-  for (const p of projects) {
+// Helper: build per-project session map from custom-title events + heartbeat state.
+async function buildSessionMap(projectId) {
+  const projectDir = path.join(PROJECTS_DIR, projectId);
+  const sessionMap = new Map();
+
+  try {
+    const { stdout } = await execFileAsync('grep', [
+      '-r', '--include=*.jsonl', '-h', '"custom-title"', projectDir,
+    ], { maxBuffer: 1024 * 1024 });
+    for (const line of stdout.split('\n')) {
+      try {
+        const evt = JSON.parse(line.trim());
+        if (evt.type === 'custom-title' && evt.customTitle && evt.sessionId) {
+          sessionMap.set(evt.sessionId, evt.customTitle);
+        }
+      } catch {}
+    }
+  } catch {}
+
+  const result = {};
+  for (const [sessionId, customTitle] of sessionMap) {
+    const title = customTitle.trim();
+    if (!title) continue;
+
+    let status = 'notfound';
+    let childProcesses = 0;
+    const hb = heartbeats.get(sessionId);
+    if (hb) {
+      let alive = true;
+      if (hb.pid) {
+        try { process.kill(hb.pid, 0); } catch { alive = false; }
+      }
+      if (alive) {
+        status = hb.state;
+        if (hb.pid) {
+          try {
+            const { stdout } = await execFileAsync('pgrep', ['-P', String(hb.pid)]);
+            childProcesses = stdout.trim().split('\n').filter(Boolean).length;
+          } catch {}
+        }
+      } else {
+        heartbeats.delete(sessionId);
+        saveHeartbeats();
+      }
+    }
+
+    const stateTs = hb?.stateTs || null;
+    result[title] = { sessionId, status, childProcesses, stateTs };
+  }
+
+  return result;
+}
+
+// GET /api/state — consolidated dashboard state
+app.get('/api/state', async (req, res) => {
+  const discovered = await discoverProjects();
+
+  // Determine which projects have live heartbeats (avoid expensive jsonl grep for inactive ones)
+  const activeProjectIds = new Set();
+  for (const [, hb] of heartbeats) {
+    if (!hb.cwd) continue;
+    let alive = true;
+    if (hb.pid) { try { process.kill(hb.pid, 0); } catch { alive = false; } }
+    if (alive) activeProjectIds.add(encodeProjectPath(hb.cwd));
+  }
+
+  const projects = await Promise.all(discovered.map(async (p) => {
     let stats = { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 };
+    let content = '';
     try {
-      const content = await fs.readFile(path.join(p.path, 'TASKS.md'), 'utf8');
+      content = await fs.readFile(path.join(p.path, 'TASKS.md'), 'utf8');
       for (const line of content.split('\n')) {
         if (/^- \[ \]/.test(line)) { stats.todo++; stats.total++; }
         else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
@@ -171,9 +234,24 @@ app.get('/api/projects', async (req, res) => {
         else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
       }
     } catch {}
-    result.push({ id: p.id, name: p.name, path: p.path, stats });
-  }
-  res.json(result);
+
+    let sessionMap = null;
+    let sessions = { running: 0, idle: 0, permission: 0, 'bg-active': 0 };
+
+    if (activeProjectIds.has(p.id)) {
+      sessionMap = await buildSessionMap(p.id);
+      // Derive aggregate counts from sessionMap (bg-active = idle + childProcesses > 0)
+      for (const s of Object.values(sessionMap)) {
+        const isBgActive = s.status === 'idle' && s.childProcesses > 0;
+        const key = isBgActive ? 'bg-active' : s.status;
+        if (key in sessions) sessions[key]++;
+      }
+    }
+
+    return { id: p.id, name: p.name, path: p.path, content, stats, sessions, sessionMap };
+  }));
+
+  res.json({ projects });
 });
 
 // GET /project/:projectId — serve dashboard.html with injected projectId
@@ -192,20 +270,6 @@ app.get('/project/:projectId', async (req, res) => {
   const script = `<script>window.__projectId = ${JSON.stringify(projectId)}; window.__projectName = ${JSON.stringify(project.name)};</script>`;
   html = html.replace('</head>', `${script}\n</head>`);
   res.type('html').send(html);
-});
-
-// GET /api/tasks/:projectId
-app.get('/api/tasks/:projectId', async (req, res) => {
-  const { projectId } = req.params;
-  const project = await getProjectById(projectId);
-  if (!project) return res.status(404).json({ error: 'Project not found' });
-
-  try {
-    const content = await fs.readFile(path.join(project.path, 'TASKS.md'), 'utf8');
-    res.json({ content });
-  } catch {
-    res.status(404).json({ error: 'TASKS.md not found' });
-  }
 });
 
 // PUT /api/tasks/:projectId
@@ -230,84 +294,18 @@ app.put('/api/tasks/:projectId', async (req, res) => {
 
 // POST /api/heartbeat — receive heartbeat from hook
 app.post('/api/heartbeat', (req, res) => {
-  const { sessionId, state, pid } = req.body;
+  const { sessionId, state, pid, cwd } = req.body;
   if (!sessionId || !state) return res.status(400).json({ error: 'missing sessionId or state' });
   if (state === 'notfound') {
     heartbeats.delete(sessionId);
   } else {
     const prev = heartbeats.get(sessionId);
     const now = Date.now();
-    // Track when the current state was entered
     const stateTs = (prev && prev.state === state) ? prev.stateTs : now;
-    heartbeats.set(sessionId, { state, ts: now, stateTs, pid: pid || null });
+    heartbeats.set(sessionId, { state, ts: now, stateTs, pid: pid || null, cwd: cwd || prev?.cwd || null });
   }
   saveHeartbeats();
   res.json({ ok: true });
-});
-
-// GET /api/sessions/:projectId — session status via in-memory heartbeats
-app.get('/api/sessions/:projectId', async (req, res) => {
-  const { projectId } = req.params;
-  const projectDir = path.join(PROJECTS_DIR, projectId);
-
-  // grep custom-title events to build sessionId → customTitle map
-  let entries = [];
-  try {
-    const { execFile } = await import('child_process');
-    const { promisify } = await import('util');
-    const execFileAsync = promisify(execFile);
-    const { stdout } = await execFileAsync('grep', [
-      '-r', '--include=*.jsonl', '-h', '"custom-title"', projectDir
-    ], { maxBuffer: 1024 * 1024 });
-    const titleBySession = new Map();
-    for (const line of stdout.split('\n')) {
-      try {
-        const evt = JSON.parse(line.trim());
-        if (evt.type === 'custom-title' && evt.customTitle && evt.sessionId) {
-          titleBySession.set(evt.sessionId, evt.customTitle);
-        }
-      } catch {}
-    }
-    for (const [sessionId, customTitle] of titleBySession) {
-      entries.push({ sessionId, customTitle });
-    }
-  } catch {}
-
-  // Resolve status from in-memory heartbeats (PID-based liveness)
-  const result = {};
-
-  for (const entry of entries) {
-    const title = entry.customTitle.trim();
-    if (!title) continue;
-
-    let status = 'notfound';
-    let childProcesses = 0;
-    const hb = heartbeats.get(entry.sessionId);
-    if (hb) {
-      let alive = true;
-      if (hb.pid) {
-        try { process.kill(hb.pid, 0); } catch { alive = false; }
-      }
-      if (alive) {
-        status = hb.state;
-        // Count child processes to detect background tasks/subagents
-        if (hb.pid) {
-          try {
-            const { stdout } = await execFileAsync('pgrep', ['-P', String(hb.pid)]);
-            childProcesses = stdout.trim().split('\n').filter(Boolean).length;
-          } catch { /* pgrep exits 1 when no children found */ }
-        }
-      } else {
-        heartbeats.delete(entry.sessionId);
-        saveHeartbeats();
-      }
-    }
-
-    const stateTs = hb?.stateTs || null;
-    result[title] = { sessionId: entry.sessionId, status, childProcesses, stateTs };
-  }
-
-  res.json(result);
 });
 
 // POST /api/focus-ghostty-tab — focus a Ghostty tab by matching title substring

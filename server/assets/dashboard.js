@@ -1,12 +1,12 @@
     // ===== STATE =====
     let projectId = window.__projectId || null;
-    let allProjects = []; // cached project list from /api/projects
+    let allProjects = []; // cached project state from /api/state
     let preamble = '';
     let sections = [];
     let hasChanges = false;
     let isSaving = false;
     let activeSectionId = null; // selected section in sidebar, null = show all
-    let sessionMap = {}; // customTitle → { sessionId, status, summary }
+    let sessionMap = {}; // customTitle → { sessionId, status, summary } — active project
     let hideDone = localStorage.getItem('octask-hide-done') !== 'false';
     let healthPollTimer = null;
     let lastSessionSnapshot = null;
@@ -391,8 +391,8 @@
       renderSidebar();
       renderBoard();
       lucide.createIcons();
-      // Capsule icons need thicker strokes at small size
-      document.querySelectorAll('.session-capsule svg').forEach(svg => {
+      // Capsule and stats icons need thicker strokes at small size
+      document.querySelectorAll('.session-capsule svg, .proj-task-count svg').forEach(svg => {
         svg.setAttribute('stroke-width', '2.5');
       });
     }
@@ -424,6 +424,27 @@
     }
 
 
+    function buildProjStatsHtml(proj, isActive) {
+      // Task count: ongoing + todo only
+      const incompleteCount = isActive
+        ? (() => { const c = countByStatus(allTasks()); return c.ongoing + c.todo; })()
+        : proj.stats.ongoing + proj.stats.todo;
+
+      // Session capsules: always use proj.sessions (heartbeat aggregate counts).
+      // Same data source for all projects — decoupled from project switching.
+      const capsuleIcons = { running: 'play', idle: 'coffee', permission: 'hand', 'bg-active': 'terminal' };
+      const sc = proj.sessions || {};
+      const capsuleHtml = ['running', 'bg-active', 'permission', 'idle']
+        .filter(k => sc[k] > 0)
+        .map(k => `<span class="session-capsule ${k}"><i data-lucide="${capsuleIcons[k]}"></i>${sc[k]}</span>`)
+        .join('');
+
+      return `<div class="proj-stats-row">
+        <span class="proj-task-count"><i data-lucide="list-todo"></i><span class="count-num">${incompleteCount}</span></span>
+        ${capsuleHtml ? `<span class="proj-stat-sep"></span>${capsuleHtml}` : ''}
+      </div>`;
+    }
+
     function renderProjectList() {
       const list = $('projectList');
       list.innerHTML = '';
@@ -445,11 +466,11 @@
             <div class="done" style="width:${(proj.stats.done/total)*100}%"></div>
             <div class="ongoing" style="width:${(proj.stats.ongoing/total)*100}%"></div>
           </div>
+          ${buildProjStatsHtml(proj, isActive)}
         `;
 
         if (isActive) {
           html += `<div class="project-expanded">
-            <div class="global-stats" id="globalStats"></div>
             <div class="section-list" id="sectionList"></div>
           </div>`;
         }
@@ -467,17 +488,9 @@
     function renderSidebar() {
       renderProjectList();
 
-      // Global stats (inside active project's expanded area)
-      const globalStatsEl = $('globalStats');
-      if (!globalStatsEl) return;
-      const all = allTasks();
-      const counts = countByStatus(all);
-      globalStatsEl.innerHTML = STATUS_ORDER.map(st =>
-        `<div class="global-stat">${statusIcon(st)}<span class="num">${counts[st]}</span></div>`
-      ).join('');
-
       // Section list
       const list = $('sectionList');
+      if (!list) return;
       list.innerHTML = '';
 
       if (sections.some(s => s.name)) {
@@ -1079,42 +1092,59 @@
     // ===== QUICK CREATE BAR =====
     const quickInput = $('quickCreateInput');
     const quickBar = $('quickCreateBar');
+    let quickCreateKeepOpen = false;
 
-    function updateQuickBarState() {
-      quickBar.classList.toggle('has-content', quickInput.value.trim().length > 0);
+    function expandQuickBar() {
+      quickBar.classList.add('expanded');
+      setTimeout(() => quickInput.focus(), 60);
     }
 
-    quickInput.addEventListener('input', updateQuickBarState);
+    function collapseQuickBar() {
+      quickInput.value = '';
+      quickBar.classList.remove('expanded');
+    }
+
+    $('quickCreateFab').addEventListener('click', (e) => {
+      e.stopPropagation();
+      expandQuickBar();
+    });
+
+    quickInput.addEventListener('blur', () => {
+      if (quickCreateKeepOpen) { quickCreateKeepOpen = false; return; }
+      setTimeout(() => {
+        if (!quickBar.contains(document.activeElement)) collapseQuickBar();
+      }, 150);
+    });
 
     quickInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         $('quickCreateCopy').click();
       } else if (e.key === 'Escape') {
-        quickInput.blur();
+        collapseQuickBar();
       }
     });
 
     $('quickCreateCopy').addEventListener('click', async () => {
+      quickCreateKeepOpen = true;
       const desc = quickInput.value.trim();
       if (!desc) { showStatus('Enter a task description first', true); quickInput.focus(); return; }
       const projectPath = getCurrentProjectPath();
       if (!projectPath) { showStatus('Project path unavailable', true); return; }
       const cmd = `cd ${shellQuote(projectPath)} && claude ${shellQuote('/creating-task ' + desc)}`;
       await copyToClipboard(cmd, $('quickCreateCopy'), 'Command copied — paste in terminal');
-      quickInput.value = '';
-      updateQuickBarState();
+      collapseQuickBar();
     });
 
     $('quickCreateEditor').addEventListener('click', () => {
+      quickCreateKeepOpen = true;
       if (!sections.length) return;
       const desc = quickInput.value.trim();
+      collapseQuickBar();
       openNewTaskModal(sections[0], 'canceled');
       if (desc) {
         setTimeout(() => { const t = $('mTitle'); if (t) t.value = desc; }, 60);
       }
-      quickInput.value = '';
-      updateQuickBarState();
     });
 
     // ===== ADD SECTION =====
@@ -1248,26 +1278,44 @@
       `;
     }
 
-    async function fetchProjects() {
-      const res = await fetch('/api/projects');
+    async function fetchState() {
+      const res = await fetch('/api/state');
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      allProjects = await res.json();
+
+      const { projects: nextProjects } = await res.json();
+
+      const projectsChanged = !isDeepEqual(lastProjectsSnapshot, nextProjects);
+      if (projectsChanged) {
+        allProjects = nextProjects;
+        lastProjectsSnapshot = JSON.parse(JSON.stringify(nextProjects));
+      }
+
+      const activeEntry = allProjects.find(p => p.id === projectId);
+      const nextSessionMap = activeEntry?.sessionMap || {};
+      const sessionsChanged = !isDeepEqual(lastSessionSnapshot, nextSessionMap);
+      if (sessionsChanged) {
+        sessionMap = nextSessionMap;
+        lastSessionSnapshot = JSON.parse(JSON.stringify(nextSessionMap));
+      }
+
+      if (projectId && (sessionsChanged || projectsChanged)) render();
+      if (!serverConnected) hideErrorBanner();
     }
 
-    async function loadProject({ silent = false, skipRender = false } = {}) {
+    async function loadProject({ silent = false, skipRender = false, cachedContent = null } = {}) {
       if (!projectId) return;
       try {
-        const res = await fetch(`/api/tasks/${encodeURIComponent(projectId)}`);
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || `Server returned ${res.status}`);
+        let content = cachedContent;
+        if (content == null) {
+          await fetchState();
+          content = (allProjects.find(p => p.id === projectId) || {}).content ?? null;
         }
-        const data = await res.json();
-        lastSavedMarkdown = data.content || '';
+        if (content == null) throw new Error('TASKS.md not found');
+        lastSavedMarkdown = content;
 
         let parsed;
         try {
-          parsed = parseTasksMd(data.content || '');
+          parsed = parseTasksMd(content);
         } catch (parseErr) {
           throw new Error('TASKS.md has invalid format: ' + parseErr.message);
         }
@@ -1279,6 +1327,10 @@
         const allParsed = sections.flatMap(p => p.tasks);
         const parsedCounts = countByStatus(allParsed);
         const activeEntry = allProjects.find(p => p.id === projectId);
+        if (activeEntry?.sessionMap) {
+          sessionMap = activeEntry.sessionMap;
+          lastSessionSnapshot = JSON.parse(JSON.stringify(activeEntry.sessionMap));
+        }
         if (activeEntry) {
           activeEntry.stats = {
             todo: parsedCounts.todo,
@@ -1333,26 +1385,7 @@
       }
     }
 
-    async function fetchSessions() {
-      if (!projectId) return;
-      try {
-        const resp = await fetch(`/api/sessions/${encodeURIComponent(projectId)}`);
-        if (resp.ok) {
-          const nextSessionMap = await resp.json();
-          const isChanged = !isDeepEqual(lastSessionSnapshot, nextSessionMap);
-          if (isChanged) {
-            sessionMap = nextSessionMap;
-            lastSessionSnapshot = JSON.parse(JSON.stringify(nextSessionMap));
-            render();
-          }
-          if (!serverConnected) hideErrorBanner();
-        }
-      } catch {
-        if (serverConnected && hasChanges) {
-          showErrorBanner('Server disconnected — unsaved changes will be retried when reconnected');
-        }
-      }
-    }
+    let lastProjectsSnapshot = null;
 
     // ===== FILE WATCH (SSE) =====
     let fileWatchSource = null;
@@ -1361,7 +1394,7 @@
     function connectFileWatch() {
       if (!projectId || fileWatchSource) return;
       fileWatchSource = new EventSource(`/api/watch/${encodeURIComponent(projectId)}`);
-      fileWatchSource.onmessage = (evt) => {
+      fileWatchSource.onmessage = async (evt) => {
         try {
           const data = JSON.parse(evt.data);
           if (!data.changed) return;
@@ -1369,7 +1402,13 @@
           if (hasChanges) {
             $('fileChangedBanner').classList.add('visible');
           } else {
-            loadProject({ silent: true });
+            try {
+              await fetchState();
+              const entry = allProjects.find(p => p.id === projectId);
+              await loadProject({ silent: true, cachedContent: entry?.content ?? null });
+            } catch {
+              // ignore for now; polling will retry
+            }
           }
         } catch {}
       };
@@ -1381,10 +1420,14 @@
       };
     }
 
-    $('fileChangedReload').addEventListener('click', () => {
+    $('fileChangedReload').addEventListener('click', async () => {
       $('fileChangedBanner').classList.remove('visible');
       hasChanges = false;
-      loadProject();
+      try {
+        await fetchState();
+        const entry = allProjects.find(p => p.id === projectId);
+        await loadProject({ cachedContent: entry?.content ?? null });
+      } catch {}
     });
 
     async function switchProject(newProjectId) {
@@ -1399,7 +1442,7 @@
       // Disconnect old SSE watcher
       if (fileWatchSource) { fileWatchSource.close(); fileWatchSource = null; }
 
-      // Reset state (keep sessionMap — old data won't hurt, avoids flash)
+      // Reset state
       projectId = newProjectId;
       sections = [];
       preamble = '';
@@ -1408,16 +1451,20 @@
       activeSectionId = null;
       undoStack.length = 0;
       lastCleanSnapshot = null;
+      const projEntry = allProjects.find(p => p.id === newProjectId);
+      sessionMap = projEntry?.sessionMap || {};
+      lastSessionSnapshot = JSON.parse(JSON.stringify(sessionMap));
 
       // Update URL
       history.pushState({}, '', '/project/' + encodeURIComponent(newProjectId));
 
-      // Wait for BOTH tasks and sessions before rendering — no flash
-      await Promise.all([
-        loadProject({ skipRender: true }),
-        fetchSessions(),
-      ]);
+      // Use cached content from allProjects — instant, no network
+      const cachedContent = projEntry?.content ?? null;
+      await loadProject({ skipRender: true, cachedContent });
+
+      // Refresh state for the new active project
       render();
+      fetchState().catch(() => {});
 
       // FLIP animate project items in sidebar
       const ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -1444,7 +1491,7 @@
       selfSaveSuppress = Date.now() + 500; // refresh window after completion
     };
 
-    fetchProjects().then(() => {
+    fetchState().then(() => {
       if (!projectId) {
         if (allProjects.length > 0) {
           projectId = allProjects[0].id;
@@ -1456,12 +1503,12 @@
         }
       }
 
-      loadProject().then(() => {
-        fetchSessions().then(() => {
-          lastSessionSnapshot = JSON.parse(JSON.stringify(sessionMap));
-          render();
-        });
-        setInterval(fetchSessions, 5000);
+      const projEntry = allProjects.find(p => p.id === projectId);
+      const initialSessionMap = projEntry?.sessionMap || {};
+      sessionMap = initialSessionMap;
+      lastSessionSnapshot = JSON.parse(JSON.stringify(initialSessionMap));
+      loadProject({ cachedContent: projEntry?.content ?? null }).then(() => {
+        setInterval(() => { fetchState().catch(() => {}); }, 5000);
         setInterval(fetchUsage, 120000);
         connectFileWatch();
       });

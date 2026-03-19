@@ -156,8 +156,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [x] 修复状态感知 #fix-state-sensing
     为 session 增加后台进程检测。heartbeat 已上报 claude 进程 PID，server 端用 `pgrep -P <pid>` 查子进程数量即可判断有没有活跃的 background task 或 subagent。在 `/api/sessions/:projectId` 响应中增加 `childProcesses: number` 字段，dashboard ongoing 卡片展示后台活动指示器。
     AC: 有活跃后台进程的 ongoing 任务在 dashboard 上显示明确的后台活动标识；进程结束后标识消失。
-- [/] 侧边栏项目卡片指标改为数字统计 #sidebar-project-stats
+- [x] 侧边栏项目卡片指标改为数字统计 #sidebar-project-stats
     将项目进度条下方的状态图标改为两组数字指标：(1) 未完成任务数量（icon + 数字）；(2) 当前活跃 session 数量，按状态分类显示（running/idle/permission/background，各自 icon + 数字）。风格保持 icon + 数字的简洁形式。
+    CM: 进度条下方改为 task count（ongoing+todo）+ session capsules（Lucide icons，与卡片一致）。heartbeat 新增 cwd 字段，server /api/projects 返回 session 聚合计数和 content。sidebar capsules 统一用 proj.sessions（heartbeat 聚合），与 sessionMap（task 级映射）解耦。switchProject 用缓存 content 零网络请求加载。capsule 移除固定 width:44px 改为 auto-size。
     AC: 项目卡片进度条下方显示未完成任务计数和各状态 session 计数（icon+数字）；数据与实际 TASKS.md 和 session 状态一致；无活跃 session 时 session 区域显示 0 或隐藏。
 - [x] 优化 starting-task skill：防止跳过任务创建和过度激进执行 #fix-starting-task-aggression
     当前 starting-task skill 有两个问题：(1) 模型有时不先创建任务就直接开始解决问题；(2) 更严重的是，skill 会导致模型变得过于激进，即使任务描述中写了 "plan first"，模型也会跳过规划直接开始执行代码修改。需要在 skill 文本中加强约束，确保模型先完成任务标记，再理解需求和制定计划，最后才动手。
@@ -167,12 +168,19 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前 creating-task skill 文本不够详细，执行该命令的模型可能没有读过 /octask skill，缺少 TASKS.md 格式规范（缩进、slug 位置、AC 格式等）。同时模型倾向于做大量代码阅读才创建任务，应限制为只读 TASKS.md。
     CM: 重写 SKILL.md：内联完整的任务格式示例（slug、4-space 缩进、AC 行）和状态符号表，workflow 简化为"Read TASKS.md → Write entry → Confirm"，明确禁止读取其他文件。通过 2 轮 eval（6 runs each）验证：skill 版本正确检测重复任务、格式合规、token 效率高 18%。
     AC: creating-task skill 内联完整的任务格式规范和示例，不依赖 /octask skill；模型执行时只读 TASKS.md 不探索代码库。
-- [/] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
-    在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
-    AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
 - [-] 迁移到现代技术栈 #modernize-stack
     将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
     AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
 - [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
+- [/] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
+    在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
+    AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
+- [/] 替换图标为 teal 底重叠八边形 #replace-icon-octagon
+    将当前的图标/logo 替换为新设计：teal 色底部，两个重叠错开的八边形（白色、轻微透明），作为 Octask 的品牌图标。
+    AC: 图标文件已替换为 teal 底色 + 白色半透明重叠八边形的新设计；dashboard、PWA manifest 等引用处显示正确。
+- [x] 简化后端 API 为两个端点 #simplify-backend-api
+    当前后端有多个冗余端点（/api/projects、/api/tasks/:id、/api/sessions/:id、/api/heartbeat），数据模型混乱（stats 可从 content 算出、session 数据来源不统一）。合并为两个核心端点：(1) GET /api/state — 返回所有项目的完整状态（content、task→session 映射），支持增量更新避免重复传输未变化的 content；(2) PUT /api/tasks/:id — 更新单个项目的 TASKS.md。前端轮询 /api/state 一个请求刷新所有数据，不再需要多个并行请求。
+    CM: 提取 buildSessionMap() 复用 jsonl grep + PID + pgrep 逻辑。新增 GET /api/state 返回 { projects: [{ id, name, path, content, stats, sessions, sessionMap }] }，sessions 聚合从 sessionMap 派生（正确计算 bg-active = idle + childProcesses > 0）。删除 GET /api/projects、GET /api/tasks/:projectId、GET /api/sessions/:projectId 三个旧端点及 getProjectSessionCounts() helper。前端用 fetchState() 替代 fetchProjects() + fetchSessions()，boot/polling/SSE/switchProject 全部走 /api/state。项目切换零网络请求。
+    AC: 后端只有 /api/state 和 PUT /api/tasks/:id 两个数据端点（加 heartbeat 接收）；前端用单个轮询请求获取所有项目的完整状态；切换项目零网络请求；现有功能不丢失。
