@@ -181,8 +181,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     Project Sidebar 卡片下方的筛选状态指标只显示 ongoing 和 todo（pending）项目的统计，忽略 backlog 和 done 中的项目状态。
     CM: Section 列表的 mini-stat 图标从 STATUS_ORDER（4 种状态）改为只显示 ongoing 和 todo；section 计数从 total 改为 ongoing+todo。项目级 buildProjStatsHtml 已是 ongoing+todo 无需修改。
     AC: 侧边栏项目卡片的状态统计只包含 ongoing 和 todo 任务数量；backlog 和 done 的任务不计入显示的数字。
-- [/] 重新设计应用图标 #redesign-app-icon
+- [x] 重新设计应用图标 #redesign-app-icon
     基于 Lucide icon badge-check 设计新图标，替换当前的八边形图标。需要符合 Apple Human Interface Guidelines（圆角正方形、光影层次、适配 dark mode）和 Chrome Web Store / PWA icon 最佳实践（清晰轮廓、maskable safe zone、多尺寸适配 192/512）。输出 SVG 源文件及 PNG 导出（icon-192.png、icon-512.png、icon-maskable-192.png、icon-maskable-512.png）。
+    CM: 白色 badge-check 在 navy-to-teal 渐变背景上（#1a3a5c→#115e59→#0d9488），scale 18.5（~72% fill）。重写 generate-icons.mjs 为 SVG 光栅化器（sharp）。favicon 改为 SVG 引用。apple-touch-icon 已就位支持 macOS Tahoe Liquid Glass。
     AC: 图标基于 badge-check 造型；符合 Apple 和 Chrome icon 设计规范（safe zone、圆角、清晰辨识度）；所有尺寸文件已替换且 dashboard/PWA manifest 显示正确。
 - [x] 代码质量审查与修复 #code-quality-review
     全面检查剩余文件的代码实践：消除魔术数字和硬编码值（提取为常量）、移除未使用的变量和死代码、统一命名风格、确保错误处理完整、添加必要的 JSDoc 注释。
