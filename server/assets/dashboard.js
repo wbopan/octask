@@ -1488,12 +1488,7 @@
       const cachedContent = projEntry?.content ?? null;
       await loadProject({ skipRender: true, cachedContent });
 
-      // [4] View Transitions for project switch
-      if (document.startViewTransition) {
-        document.startViewTransition(() => render());
-      } else {
-        render();
-      }
+      render();
       fetchState().catch(() => {});
 
       // FLIP animate project items in sidebar
