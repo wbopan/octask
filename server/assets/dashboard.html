@@ -47,8 +47,8 @@
     </div>
   </div>
 
-  <!-- MODAL -->
-  <div class="modal-overlay" id="modalOverlay">
+  <!-- MODAL (native <dialog> for focus trapping, Escape-to-close, ::backdrop) -->
+  <dialog class="modal-dialog" id="modalDialog">
     <div class="modal">
       <div class="modal-header">
         <h3 id="modalTitle">Edit Task</h3>
@@ -60,7 +60,7 @@
         <button id="modalSave" class="primary">Save</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <div class="file-changed-banner" id="fileChangedBanner">
     <span>File changed externally. Reload to see changes?</span>

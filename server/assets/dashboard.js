@@ -532,15 +532,20 @@
             </div>
             ${section.description ? `<div class="section-item-desc">${escapeHtml(section.description)}</div>` : ''}
             <div class="section-item-actions">
-              <button data-action="edit-section">Edit</button>
-              <button data-action="delete-section">Delete</button>
+              <button data-action="edit-section" data-tooltip="Edit section">Edit</button>
+              <button data-action="delete-section" data-tooltip="Delete section">Delete</button>
             </div>
           `;
 
           item.addEventListener('click', (e) => {
             if (e.target.closest('[data-action]')) return;
             activeSectionId = isActive ? null : section.id;
-            render();
+            // [4] View Transitions for section filter
+            if (document.startViewTransition) {
+              document.startViewTransition(() => render());
+            } else {
+              render();
+            }
           });
 
           item.querySelector('[data-action="edit-section"]')?.addEventListener('click', (e) => {
@@ -918,18 +923,21 @@
       $('modalTitle').textContent = title;
       $('modalBody').innerHTML = bodyHtml;
       modalSaveCallback = onSave;
-      $('modalOverlay').classList.add('visible');
+      $('modalDialog').showModal();
     }
 
     function closeModal() {
-      $('modalOverlay').classList.remove('visible');
+      $('modalDialog').close();
       modalSaveCallback = null;
     }
 
     $('modalClose').addEventListener('click', closeModal);
     $('modalCancel').addEventListener('click', closeModal);
     $('modalSave').addEventListener('click', () => { if (modalSaveCallback) modalSaveCallback(); closeModal(); });
-    $('modalOverlay').addEventListener('click', (e) => { if (e.target === $('modalOverlay')) closeModal(); });
+    // Native <dialog>: click on backdrop (transparent dialog area outside .modal) to close
+    $('modalDialog').addEventListener('click', (e) => { if (e.target === $('modalDialog')) closeModal(); });
+    // Native <dialog>: Escape fires 'cancel' event — reset callback
+    $('modalDialog').addEventListener('cancel', () => { modalSaveCallback = null; });
 
     function openNewTaskModal(section, defaultStatus = 'todo') {
       const hasNamedSections = sections.some(s => s.name);
@@ -1480,8 +1488,12 @@
       const cachedContent = projEntry?.content ?? null;
       await loadProject({ skipRender: true, cachedContent });
 
-      // Refresh state for the new active project
-      render();
+      // [4] View Transitions for project switch
+      if (document.startViewTransition) {
+        document.startViewTransition(() => render());
+      } else {
+        render();
+      }
       fetchState().catch(() => {});
 
       // FLIP animate project items in sidebar
