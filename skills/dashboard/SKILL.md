@@ -19,7 +19,20 @@ curl -s http://localhost:3847/api/health
 ### 2. If NOT running, start it in the background
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/start-server.sh"
+SERVER_DIR="${CLAUDE_PLUGIN_ROOT}/server"
+if [ ! -d "${SERVER_DIR}/node_modules" ]; then
+  cd "${SERVER_DIR}" && npm install --production --silent
+fi
+cd "${SERVER_DIR}" && nohup node server.js > /tmp/task-dashboard.log 2>&1 &
+```
+
+Wait up to 6 seconds for the server to become ready:
+
+```bash
+for i in $(seq 1 30); do
+  curl -s http://localhost:3847/api/health >/dev/null 2>&1 && break
+  sleep 0.2
+done
 ```
 
 ### 3. Open the dashboard in the browser
@@ -32,6 +45,5 @@ open "http://localhost:3847" 2>/dev/null || xdg-open "http://localhost:3847" 2>/
 
 Report to the user:
 - The dashboard is running at `http://localhost:3847`
-- If they want to start it manually outside Claude, they can run: `octask-dashboard`
 - Suggest they save the page as a **PWA** (Progressive Web App) for quick access — in Chrome/Edge, click the install icon in the address bar or use Menu → "Install app"
 - The server will auto-shutdown after 30 minutes of inactivity
