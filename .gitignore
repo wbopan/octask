@@ -4,5 +4,4 @@ node_modules/
 .worktrees/
 .claude/worktrees/
 TASKS.md
-.claude/skills/
-.claude/settings.local.json
+.claude/
