@@ -169,6 +169,7 @@ async function buildSessionMap(projectId) {
 
     let status = 'notfound';
     let childProcesses = 0;
+    let backgroundTasks = [];
     const hb = heartbeats.get(sessionId);
     if (hb) {
       let alive = true;
@@ -180,7 +181,11 @@ async function buildSessionMap(projectId) {
         if (hb.pid) {
           try {
             const { stdout } = await execFileAsync('pgrep', ['-P', String(hb.pid)]);
-            childProcesses = stdout.trim().split('\n').filter(Boolean).length;
+            const childPids = stdout.trim().split('\n').filter(Boolean);
+            if (childPids.length > 0) {
+              const { stdout: psOut } = await execFileAsync('ps', ['-p', childPids.join(','), '-o', 'command=']);
+              childProcesses = psOut.split('\n').filter(Boolean).filter(cmd => !cmd.includes('caffeinate')).length;
+            }
           } catch { /* ignored */ }
         }
       } else {
@@ -189,11 +194,45 @@ async function buildSessionMap(projectId) {
       }
     }
 
+    backgroundTasks = await scanBackgroundTasks(projectId, sessionId);
     const stateTs = hb?.stateTs || null;
-    result[title] = { sessionId, status, childProcesses, stateTs };
+    result[title] = { sessionId, status, childProcesses, backgroundTasks, stateTs };
   }
 
   return result;
+}
+
+async function scanBackgroundTasks(projectId, sessionId) {
+  const tasksDir = path.join('/private/tmp', 'claude-501', projectId, sessionId, 'tasks');
+  let taskFiles;
+  try {
+    taskFiles = await fs.readdir(tasksDir, { withFileTypes: true });
+  } catch { return []; }
+
+  const tasks = [];
+  for (const file of taskFiles) {
+    if (!file.name.endsWith('.output')) continue;
+    const id = file.name.slice(0, -7);
+    if (!/^[ab]/.test(id)) continue;
+
+    const filePath = path.join(tasksDir, file.name);
+    try {
+      const st = await fs.lstat(filePath);
+
+      let type;
+      if (st.isSymbolicLink()) {
+        type = 'agent';
+      } else if (st.isFile() && /^b/.test(id)) {
+        type = 'bash';
+      } else {
+        continue;
+      }
+
+      tasks.push({ id, type, output: filePath });
+    } catch { /* ignored */ }
+  }
+
+  return tasks;
 }
 
 // ===== OAuth Usage Proxy =====

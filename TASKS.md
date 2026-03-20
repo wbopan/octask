@@ -202,16 +202,21 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
     CM: 创建 wbopan/octask-marketplace 公开仓库，marketplace.json 使用 `{"source": "github", "repo": "wbopan/octask"}` 引用插件 repo。从插件 repo 删除 marketplace.json（只保留 plugin.json）。更新 known_marketplaces.json 指向新 marketplace repo，重新 clone marketplace 到本地缓存，同步 plugin cache。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
-- [/] 改善 onboarding 体验 #improve-onboarding
+- [x] 改善 onboarding 体验 #improve-onboarding
     当前没有 TASKS.md 的项目在 dashboard 中显示空白或报错，缺乏引导。README 的安装和上手说明也不够清晰完整。需要：(1) dashboard 在无 TASKS.md 时显示友好的空状态引导页（说明 Octask 是什么、如何创建第一个 TASKS.md）；(2) 改善 README 的 onboarding 流程，让新用户能快速理解和上手。
+    CM: Dashboard 空状态拆为 emptyLoading/emptyOnboarding 两层。无项目时显示 Welcome to Octask 引导页（badge-check 图标、3 步引导、auto-discovery 提示）。Offline/error 状态复用 loading 层。FAB 在 onboarding 和 offline 状态隐藏。README 扩展为 4 步 Getting Started + Commands 表 + TASKS.md 格式示例。
     AC: 无 TASKS.md 的项目在 dashboard 中显示有意义的空状态引导内容而非空白；README 包含清晰的 getting started 步骤，新用户按步骤操作即可上手。
 - [x] Move default TASKS.md location to .claude/ #move-tasks-to-dotclaude
     Change the default location where Octask looks for and creates TASKS.md from the project root to `.claude/TASKS.md`. This keeps task tracking files together with other Claude config and out of the project's visible root. Requires updating: server project discovery, skill references, dashboard parser paths, .gitignore conventions, and the octask skill template.
-    AC: Octask reads and writes TASKS.md from `.claude/TASKS.md` by default; existing references in skills, server, and docs point to the new location; projects with root-level TASKS.md still work via fallback or migration.
     CM: Server now uses `.claude/TASKS.md` exclusively (no root fallback). Added `tasksFileExists()`, `tasksAbsolute()`, `tasksDir()` helpers. Updated all 4 server endpoints (discoverProjects, /api/state, PUT /api/tasks, /api/watch). PUT creates `.claude/` dir if needed. Updated all 3 skill files with new path. Updated CLAUDE.md, README.md, dashboard.js empty state, .gitignore (removed root TASKS.md entry).
+    AC: Octask reads and writes TASKS.md from `.claude/TASKS.md` by default; existing references in skills, server, and docs point to the new location; projects with root-level TASKS.md still work via fallback or migration.
 - [x] 将 TASKS.md 位置改回项目根目录 #revert-tasks-location
     撤回 #move-tasks-to-dotclaude 的改动，将 TASKS.md 默认位置从 `.claude/TASKS.md` 改回项目根目录。原因：`.claude/` 目录下的文件每次修改都需要用户授权，影响使用体验。需要更新 server 的项目发现、路径 helper、skill 引用、dashboard 空状态提示、.gitignore 等。
     AC: Octask 默认在项目根目录读写 TASKS.md；server、skill、docs 中的路径引用指向根目录；修改 TASKS.md 不再触发权限提示。
 - [/] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
     当前 dashboard 在窗口缩小到手机尺寸时布局溢出或无法使用。需要添加响应式断点，使 sidebar 可折叠/隐藏，看板列在小屏幕上纵向堆叠或可横向滑动，卡片和操作按钮在触控设备上可用。
     AC: 浏览器窗口缩小到手机宽度（≤480px）时，dashboard 显示有意义的内容且可正常操作；sidebar 可折叠或隐藏；任务卡片可读且可交互。
+- [x] 精确识别后台子进程类型，过滤 caffeinate 等系统进程 #fix-subprocess-detection
+    当前 `pgrep -P <pid>` 统计所有子进程，导致 caffeinate（Claude Code 自带防休眠）被误计为后台任务，session 被错误标记为 `bg-active`。应改为扫描 `/private/tmp/claude-501/{projectPath}/{sessionId}/tasks/` 下的 output 文件来精确识别真正的后台任务（symlink = subagent，普通文件 = background bash），并在 API 响应中返回每个后台任务的 output 路径列表。
+    CM: buildSessionMap 中 pgrep -P 结果通过 ps 过滤 caffeinate 进程；新增 scanBackgroundTasks() 扫描 /tmp tasks 目录，用 lstat 区分 symlink(agent) vs file(bash)；API 响应增加 backgroundTasks 数组含 id/type/output 路径。
+    AC: caffeinate 等系统子进程不再被计入 childProcesses；API 返回后台任务列表区分 subagent 和 background bash；仅有 caffeinate 子进程时 session 不被标记为 bg-active。
