@@ -211,7 +211,6 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     CM: Server now uses `.claude/TASKS.md` exclusively (no root fallback). Added `tasksFileExists()`, `tasksAbsolute()`, `tasksDir()` helpers. Updated all 4 server endpoints (discoverProjects, /api/state, PUT /api/tasks, /api/watch). PUT creates `.claude/` dir if needed. Updated all 3 skill files with new path. Updated CLAUDE.md, README.md, dashboard.js empty state, .gitignore (removed root TASKS.md entry).
 - [x] 将 TASKS.md 位置改回项目根目录 #revert-tasks-location
     撤回 #move-tasks-to-dotclaude 的改动，将 TASKS.md 默认位置从 `.claude/TASKS.md` 改回项目根目录。原因：`.claude/` 目录下的文件每次修改都需要用户授权，影响使用体验。需要更新 server 的项目发现、路径 helper、skill 引用、dashboard 空状态提示、.gitignore 等。
-    CM: Server 路径 helper 改回根目录（移除 TASKS_DOTCLAUDE，tasksDir 返回 projectPath，移除 PUT 的 mkdir）。3 个 skill 文件路径引用改为根目录。dashboard.html 空状态提示移除 .claude/ 前缀。README 和 CLAUDE.md 同步更新。.gitignore 重新添加根 TASKS.md。文件从 .claude/TASKS.md 复制到根目录。
     AC: Octask 默认在项目根目录读写 TASKS.md；server、skill、docs 中的路径引用指向根目录；修改 TASKS.md 不再触发权限提示。
 - [/] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
     当前 dashboard 在窗口缩小到手机尺寸时布局溢出或无法使用。需要添加响应式断点，使 sidebar 可折叠/隐藏，看板列在小屏幕上纵向堆叠或可横向滑动，卡片和操作按钮在触控设备上可用。

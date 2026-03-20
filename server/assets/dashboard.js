@@ -107,14 +107,26 @@
     }
 
     function showOfflineState() {
-      const h2 = $('emptyState').querySelector('h2');
-      const p = $('emptyState').querySelector('p');
+      $('emptyLoading').style.display = '';
+      $('emptyOnboarding').style.display = 'none';
+      const h2 = $('emptyLoading').querySelector('h2');
+      const p = $('emptyLoading').querySelector('p');
       h2.textContent = 'Server Not Running';
       p.innerHTML = 'Use <code>/dashboard</code> in Claude Code to start the server.';
       $('emptyState').style.display = 'flex';
       $('sidebar').style.display = 'none';
       $('boardWrapper').style.display = 'none';
+      $('quickCreateBar').style.display = 'none';
       startHealthPolling();
+    }
+
+    function showOnboardingState() {
+      $('emptyLoading').style.display = 'none';
+      $('emptyOnboarding').style.display = '';
+      $('emptyState').style.display = 'flex';
+      $('sidebar').style.display = 'none';
+      $('boardWrapper').style.display = 'none';
+      $('quickCreateBar').style.display = 'none';
     }
 
     $('errorBannerRetry').addEventListener('click', async () => {
@@ -1366,6 +1378,7 @@
         $('emptyState').style.display = 'none';
         $('sidebar').style.display = 'flex';
         $('boardWrapper').style.display = 'flex';
+        $('quickCreateBar').style.display = '';
 
         lastCleanSnapshot = takeSnapshot();
         undoStack.length = 0;
@@ -1396,8 +1409,10 @@
       } catch (e) {
         const isNetworkError = e.message === 'Failed to fetch' || e.name === 'TypeError';
         if (isNetworkError) return showOfflineState();
-        $('emptyState').querySelector('h2').textContent = 'Error';
-        $('emptyState').querySelector('p').textContent = e.message;
+        $('emptyLoading').style.display = '';
+        $('emptyOnboarding').style.display = 'none';
+        $('emptyLoading').querySelector('h2').textContent = 'Error';
+        $('emptyLoading').querySelector('p').textContent = e.message;
       }
     }
 
@@ -1512,8 +1527,7 @@
           projectId = allProjects[0].id;
           history.replaceState({}, '', '/project/' + encodeURIComponent(projectId));
         } else {
-          $('emptyState').querySelector('h2').textContent = 'No projects found';
-          $('emptyState').querySelector('p').textContent = 'No projects with .claude/TASKS.md were found in ~/.claude/projects.';
+          showOnboardingState();
           return;
         }
       }
