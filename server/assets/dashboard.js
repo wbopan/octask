@@ -163,8 +163,20 @@
     $('sidebarBackdrop').addEventListener('click', closeSidebar);
 
     // ===== COLUMN PICKER (responsive) =====
-    const COLUMN_PICKER_DEFAULT = ['ongoing', 'todo'];
+    // Breakpoints calculated from: sidebar 350px + columns × 260px min-width
+    // ≤1390px: column picker + hide Done   (sidebar 350 + 4×260 = 1390)
+    // ≤1130px: sidebar overlay             (sidebar 350 + 3×260 = 1130)
+    //  ≤780px: also hide Backlog           (3×260 = 780)
+    const COLUMN_PICKER_BP = 1390;
+    const COLUMN_PICKER_NARROW_BP = 780;
     const COLUMN_PICKER_STORAGE_KEY = 'octask-visible-columns';
+
+    function columnPickerDefault() {
+      if (window.innerWidth <= COLUMN_PICKER_NARROW_BP) return ['ongoing', 'todo'];
+      return ['ongoing', 'todo', 'canceled'];
+    }
+
+    let userCustomizedColumns = localStorage.getItem(COLUMN_PICKER_STORAGE_KEY) !== null;
 
     let visibleColumns = (() => {
       try {
@@ -174,16 +186,16 @@
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
       } catch { /* ignore */ }
-      return [...COLUMN_PICKER_DEFAULT];
+      return columnPickerDefault();
     })();
 
-    function isNarrowViewport() {
-      return window.matchMedia('(max-width: 850px)').matches;
+    function isColumnPickerActive() {
+      return window.matchMedia(`(max-width: ${COLUMN_PICKER_BP}px)`).matches;
     }
 
     function applyColumnVisibility() {
-      if (!isNarrowViewport()) {
-        // Wide/medium: show all columns
+      if (!isColumnPickerActive()) {
+        // Wide: show all columns
         document.querySelectorAll('.status-column').forEach(col => {
           col.classList.remove('column-hidden');
         });
@@ -203,6 +215,7 @@
       } else {
         visibleColumns.push(status);
       }
+      userCustomizedColumns = true;
       localStorage.setItem(COLUMN_PICKER_STORAGE_KEY, JSON.stringify(visibleColumns));
       applyColumnVisibility();
       renderColumnPickerDropdown();
@@ -255,9 +268,17 @@
       }
     });
 
-    // Re-apply column visibility when crossing the 850px breakpoint
-    window.matchMedia('(max-width: 850px)').addEventListener('change', () => {
+    // Re-apply column visibility when crossing breakpoints
+    window.matchMedia(`(max-width: ${COLUMN_PICKER_BP}px)`).addEventListener('change', () => {
       applyColumnVisibility();
+    });
+    // When crossing the narrow breakpoint, reset to defaults if user hasn't customized
+    window.matchMedia(`(max-width: ${COLUMN_PICKER_NARROW_BP}px)`).addEventListener('change', () => {
+      if (!userCustomizedColumns) {
+        visibleColumns = columnPickerDefault();
+      }
+      applyColumnVisibility();
+      updateColumnPickerLabel();
     });
 
 

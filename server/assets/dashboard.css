@@ -1679,13 +1679,40 @@
   }
 }
 
-/* ===== RESPONSIVE: ≤1100px — sidebar overlay ===== */
-@media (max-width: 1100px) {
+/* ===== RESPONSIVE BREAKPOINTS =====
+ * Calculated from: sidebar 350px + columns × 260px min-width, no gaps.
+ *   4 cols + sidebar = 1390px
+ *   3 cols + sidebar = 1130px
+ *   3 cols alone     =  780px
+ *   2 cols alone     =  520px
+ *
+ * Progression:
+ *   ≤1390px  column picker appears, Done hidden by default
+ *   ≤1130px  sidebar becomes overlay (3 cols get full width)
+ *    ≤780px  Backlog also hidden (2 cols: Ongoing + Pending)
+ */
+
+/* --- ≤1390px: column picker + hide Done --- */
+@media (max-width: 1390px) {
+  .column-picker {
+    display: flex;
+  }
+
+  .status-column.column-hidden {
+    display: none;
+  }
+
+  .status-column {
+    min-width: 0;
+  }
+}
+
+/* --- ≤1130px: sidebar overlay --- */
+@media (max-width: 1130px) {
   .hamburger-btn {
     display: flex;
   }
 
-  /* Sidebar: always positioned as overlay at this breakpoint, hidden via transform */
   .app-body.project-loaded .sidebar {
     display: flex;
     position: fixed;
@@ -1706,21 +1733,6 @@
 
   .app-body.sidebar-open .sidebar-backdrop {
     display: block;
-  }
-}
-
-/* ===== RESPONSIVE: ≤850px — column picker visible ===== */
-@media (max-width: 850px) {
-  .column-picker {
-    display: flex;
-  }
-
-  .status-column.column-hidden {
-    display: none;
-  }
-
-  .status-column {
-    min-width: 0;
   }
 }
 
