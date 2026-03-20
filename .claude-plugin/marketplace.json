@@ -8,7 +8,7 @@
     {
       "name": "octask",
       "description": "Octask — task management with TASKS.md kanban dashboard",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "source": "./",
       "author": {
         "name": "Wenbo Pan"
