@@ -112,8 +112,7 @@
       h2.textContent = 'Server Not Running';
       p.innerHTML = 'Use <code>/dashboard</code> in Claude Code to start the server.';
       $('emptyState').style.display = 'flex';
-      $('sidebar').style.display = 'none';
-      $('boardWrapper').style.display = 'none';
+      $('appBody').classList.remove('project-loaded');
       startHealthPolling();
     }
 
@@ -139,6 +138,116 @@
     }
 
     function uid() { return String(Date.now()) + Math.random().toString(36).slice(2); }
+
+    // ===== SIDEBAR TOGGLE (responsive) =====
+    function toggleSidebar() {
+      $('appBody').classList.toggle('sidebar-open');
+    }
+
+    function closeSidebar() {
+      $('appBody').classList.remove('sidebar-open');
+    }
+
+    $('hamburgerBtn').addEventListener('click', toggleSidebar);
+    $('sidebarBackdrop').addEventListener('click', closeSidebar);
+
+    // ===== COLUMN PICKER (responsive) =====
+    const COLUMN_PICKER_DEFAULT = ['ongoing', 'todo'];
+    const COLUMN_PICKER_STORAGE_KEY = 'octask-visible-columns';
+
+    let visibleColumns = (() => {
+      try {
+        const stored = localStorage.getItem(COLUMN_PICKER_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch { /* ignore */ }
+      return [...COLUMN_PICKER_DEFAULT];
+    })();
+
+    function isNarrowViewport() {
+      return window.matchMedia('(max-width: 850px)').matches;
+    }
+
+    function applyColumnVisibility() {
+      if (!isNarrowViewport()) {
+        // Wide/medium: show all columns
+        document.querySelectorAll('.status-column').forEach(col => {
+          col.classList.remove('column-hidden');
+        });
+        return;
+      }
+      document.querySelectorAll('.status-column').forEach(col => {
+        const status = col.dataset.status;
+        col.classList.toggle('column-hidden', !visibleColumns.includes(status));
+      });
+    }
+
+    function toggleColumnVisibility(status) {
+      const idx = visibleColumns.indexOf(status);
+      if (idx !== -1) {
+        if (visibleColumns.length <= 1) return; // keep at least 1 visible
+        visibleColumns.splice(idx, 1);
+      } else {
+        visibleColumns.push(status);
+      }
+      localStorage.setItem(COLUMN_PICKER_STORAGE_KEY, JSON.stringify(visibleColumns));
+      applyColumnVisibility();
+      renderColumnPickerDropdown();
+      updateColumnPickerLabel();
+    }
+
+    function updateColumnPickerLabel() {
+      $('columnPickerLabel').textContent = `${visibleColumns.length} / ${STATUS_ORDER.length}`;
+    }
+
+    function renderColumnPickerDropdown() {
+      const dropdown = $('columnPickerDropdown');
+      dropdown.innerHTML = '';
+      STATUS_ORDER.forEach(status => {
+        const isActive = visibleColumns.includes(status);
+        const color = STATUS_COLORS[status];
+        const row = document.createElement('div');
+        row.className = `column-picker-row ${isActive ? 'active' : ''}`;
+        row.innerHTML = `
+          <div class="column-picker-check" style="${isActive ? `background:${color};` : ''}">
+            ${isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>' : ''}
+          </div>
+          <span class="column-picker-name" style="${isActive ? `color:${color}` : 'color:var(--text-muted)'}">${STATUS_LABELS[status]}</span>
+          <span class="column-picker-count">${sections.flatMap(s => s.tasks).filter(t => t.status === status).length}</span>
+        `;
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleColumnVisibility(status);
+        });
+        dropdown.appendChild(row);
+      });
+    }
+
+    $('columnPickerBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dropdown = $('columnPickerDropdown');
+      const isOpen = dropdown.classList.contains('open');
+      if (isOpen) {
+        dropdown.classList.remove('open');
+      } else {
+        renderColumnPickerDropdown();
+        dropdown.classList.add('open');
+      }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.column-picker')) {
+        $('columnPickerDropdown').classList.remove('open');
+      }
+    });
+
+    // Re-apply column visibility when crossing the 850px breakpoint
+    window.matchMedia('(max-width: 850px)').addEventListener('change', () => {
+      applyColumnVisibility();
+    });
 
 
     async function focusGhosttyTab(title) {
@@ -396,6 +505,8 @@
     function render() {
       renderSidebar();
       renderBoard();
+      applyColumnVisibility();
+      updateColumnPickerLabel();
       lucide.createIcons();
       // Capsule and stats icons need thicker strokes at small size
       document.querySelectorAll('.session-capsule svg, .proj-task-count svg').forEach(svg => {
@@ -1364,8 +1475,7 @@
         }
 
         $('emptyState').style.display = 'none';
-        $('sidebar').style.display = 'flex';
-        $('boardWrapper').style.display = 'flex';
+        $('appBody').classList.add('project-loaded');
 
         lastCleanSnapshot = takeSnapshot();
         undoStack.length = 0;
@@ -1448,6 +1558,7 @@
 
     async function switchProject(newProjectId) {
       if (newProjectId === projectId) return;
+      closeSidebar();
 
       // Capture old project-item positions for FLIP animation
       const oldProjRects = new Map();
@@ -1557,6 +1668,17 @@
     }
 
     document.addEventListener('keydown', (e) => {
+      // Close overlays on Escape
+      if (e.key === 'Escape') {
+        if ($('columnPickerDropdown').classList.contains('open')) {
+          $('columnPickerDropdown').classList.remove('open');
+          return;
+        }
+        if ($('appBody').classList.contains('sidebar-open')) {
+          closeSidebar();
+          return;
+        }
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); autoSave(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey && !isTextInput(e.target)) { e.preventDefault(); undo(); }
     });

@@ -23,7 +23,7 @@
     </div>
 
     <!-- SIDEBAR -->
-    <div class="sidebar" id="sidebar" style="display:none;">
+    <div class="sidebar" id="sidebar">
       <!-- Project List -->
       <div class="sidebar-card scrollable borderless" id="projectListCard">
         <div class="sidebar-card-header">
@@ -41,10 +41,24 @@
         </div>
       </div>
     </div>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <!-- BOARD -->
-    <div class="board-wrapper" id="boardWrapper" style="display:none;">
-      <div class="board-header"><h1 class="board-project-name" id="boardProjectName"></h1></div>
+    <div class="board-wrapper" id="boardWrapper">
+      <div class="board-header">
+        <button class="hamburger-btn" id="hamburgerBtn" title="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1 class="board-project-name" id="boardProjectName"></h1>
+        <div class="column-picker" id="columnPicker">
+          <button class="column-picker-btn" id="columnPickerBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span id="columnPickerLabel">2 / 4</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="column-picker-dropdown" id="columnPickerDropdown"></div>
+        </div>
+      </div>
       <div class="board-area" id="boardArea"></div>
     </div>
   </div>
