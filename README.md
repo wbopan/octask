@@ -34,8 +34,7 @@ claude plugins install octask@octask
 ## Development
 
 ```bash
-cd server && npm install --production
-node --watch server/server.js
+bun --watch server/server.js
 ```
 
 Dashboard runs at `http://localhost:3847`. See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.

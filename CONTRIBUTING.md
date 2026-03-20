@@ -9,18 +9,15 @@ Thanks for your interest in contributing!
 git clone https://github.com/anthropics/octask.git
 cd octask
 
-# Install server dependencies
-cd server && npm install --production
-
 # Start the dashboard with hot reload
-node --watch server/server.js
+bun --watch server/server.js
 ```
 
 The dashboard runs at `http://localhost:3847`.
 
 ## Project Structure
 
-- `server/` — Express server and dashboard assets (HTML/CSS/JS, no build step)
+- `server/` — Bun HTTP server and dashboard assets (HTML/CSS/JS, no build step)
 - `skills/` — Skills: `octask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`
 - `hooks/` — Lifecycle hooks (heartbeat reporting)
 - `scripts/` — Helper scripts (start server, sync to cache)
@@ -28,7 +25,7 @@ The dashboard runs at `http://localhost:3847`.
 
 ## Development
 
-- Run `./scripts/start-server.sh` to start the server (idempotent).
+- Run `bun server/server.js` to start the server.
 - Run `claude evals run evals/evals.json` to run evals.
 - The dashboard is plain HTML/CSS/JS — edit files in `server/assets/` and reload.
 

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint server/server.js server/assets/dashboard.js"
+    "lint": "bunx eslint server/server.js server/assets/dashboard.js"
   },
   "repository": {
     "type": "git",

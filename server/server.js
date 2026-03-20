@@ -1,18 +1,14 @@
-import express from 'express';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
-import https from 'https';
 import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 const execFileAsync = promisify(execFileCb);
 
-const app = express();
 const PORT = 3847;
 const PROJECTS_DIR = path.join(os.homedir(), '.claude', 'projects');
 const ASSETS_DIR = path.join(import.meta.dirname, 'assets');
-let server;
 let lastActivityAt = Date.now();
 const IDLE_SHUTDOWN_MS = 24 * 60 * 60 * 1000;
 const GREP_MAX_BUFFER = 1024 * 1024;
@@ -40,14 +36,6 @@ function tasksAbsolute(projectPath) {
 function tasksDir(projectPath) {
   return path.join(projectPath, '.claude');
 }
-
-app.use((req, _res, next) => {
-  lastActivityAt = Date.now();
-  next();
-});
-
-app.use('/assets', express.static(ASSETS_DIR));
-app.use(express.json({ limit: '1mb' }));
 
 // Heartbeat store: sessionId → { state, ts, pid }
 // Persisted to disk so state survives server restarts.
@@ -80,17 +68,14 @@ function saveHeartbeatsNow() {
 loadHeartbeats();
 
 // Encode a filesystem path into Claude Code's project directory name.
-// This is the lossless forward direction: path → id.
 function encodeProjectPath(absPath) {
   return absPath
-    .replace(/^\//,  '-')   // leading '/' → leading '-'
-    .replace(/\/\./g, '--') // '/.' (hidden dirs) → '--'
-    .replace(/\//g,  '-');  // remaining '/' → '-'
+    .replace(/^\//,  '-')
+    .replace(/\/\./g, '--')
+    .replace(/\//g,  '-');
 }
 
-// Discover projects by scanning ~/.claude/projects/ for known project dirs,
-// then finding which ones have a TASKS.md by using `find` on all parent dirs
-// that appear as session working directories.
+// Discover projects by scanning ~/.claude/projects/
 async function discoverProjects() {
   let entries;
   try {
@@ -99,13 +84,11 @@ async function discoverProjects() {
     return [];
   }
 
-  // Collect all project dir names as a Set for fast lookup
   const projectDirNames = new Set();
   for (const entry of entries) {
     if (entry.isDirectory()) projectDirNames.add(entry.name);
   }
 
-  // Read the first .jsonl from each project dir to extract the real cwd
   const projects = [];
   for (const dirName of projectDirNames) {
     const projDir = path.join(PROJECTS_DIR, dirName);
@@ -116,7 +99,6 @@ async function discoverProjects() {
     } catch { continue; }
     if (jsonlFiles.length === 0) continue;
 
-    // Read only the first 4KB of the first jsonl to find cwd
     let realPath = null;
     try {
       const fh = await fs.open(path.join(projDir, jsonlFiles[0]), 'r');
@@ -134,10 +116,8 @@ async function discoverProjects() {
     } catch { /* ignored */ }
     if (!realPath) continue;
 
-    // Verify: encode the real path and check it matches this dir name
     if (encodeProjectPath(realPath) !== dirName) continue;
 
-    // Check for .claude/TASKS.md
     if (await tasksFileExists(realPath)) {
       projects.push({
         id: dirName,
@@ -158,31 +138,11 @@ async function getProjectById(projectId) {
   }
   let project = cachedProjects.find(p => p.id === projectId);
   if (!project) {
-    // refresh and retry
     cachedProjects = await discoverProjects();
     project = cachedProjects.find(p => p.id === projectId);
   }
   return project || null;
 }
-
-// GET /sw.js — service worker bootstrap at root scope
-app.get('/sw.js', (req, res) => {
-  res.setHeader('Service-Worker-Allowed', '/');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(ASSETS_DIR, 'sw.js'));
-});
-
-// Serve dashboard shell
-async function serveDashboard(req, res) {
-  try {
-    const html = await fs.readFile(path.join(ASSETS_DIR, 'dashboard.html'), 'utf8');
-    res.type('html').send(html);
-  } catch {
-    res.status(500).send('dashboard.html not found');
-  }
-}
-app.get('/', serveDashboard);
-app.get('/offline', serveDashboard);
 
 // Helper: build per-project session map from custom-title events + heartbeat state.
 async function buildSessionMap(projectId) {
@@ -237,14 +197,50 @@ async function buildSessionMap(projectId) {
   return result;
 }
 
-// GET /api/state — consolidated dashboard state
-app.get('/api/state', async (req, res) => {
+// ===== OAuth Usage Proxy =====
+let cachedOAuthToken = null;
+let usageCache = { data: null, fetchedAt: 0 };
+const USAGE_CACHE_TTL = 2 * 60 * 1000;
+
+function getOAuthToken(forceRefresh = false) {
+  return new Promise((resolve, reject) => {
+    if (cachedOAuthToken && !forceRefresh) return resolve(cachedOAuthToken);
+    cachedOAuthToken = null;
+    execFileCb('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], (err, stdout) => {
+      if (err) return reject(err);
+      try {
+        const creds = JSON.parse(stdout.trim());
+        cachedOAuthToken = creds.claudeAiOauth?.accessToken;
+        if (!cachedOAuthToken) return reject(new Error('No accessToken in credentials'));
+        resolve(cachedOAuthToken);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+async function fetchUsageFromAPI(token) {
+  const resp = await fetch('https://api.anthropic.com/api/oauth/usage', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'anthropic-beta': 'oauth-2025-04-20',
+    },
+  });
+  if (resp.ok) {
+    return resp.json();
+  }
+  const err = new Error(`API returned ${resp.status}`);
+  err.statusCode = resp.status;
+  throw err;
+}
+
+// ===== Route handlers =====
+
+async function handleGetState() {
   cachedProjects = await discoverProjects();
   const discovered = cachedProjects;
 
-  // Determine which projects have live heartbeats (avoid expensive jsonl grep for inactive ones).
-  // Collect alive heartbeat cwds so we can prefix-match against project paths
-  // (heartbeat cwd may be a subdirectory of the project root).
   const aliveCwds = [];
   for (const [, hb] of heartbeats) {
     if (!hb.cwd) continue;
@@ -275,7 +271,6 @@ app.get('/api/state', async (req, res) => {
     const projectActive = aliveCwds.some(cwd => cwd === p.path || cwd.startsWith(p.path + '/'));
     if (projectActive) {
       sessionMap = await buildSessionMap(p.id);
-      // Derive aggregate counts from sessionMap, only for ongoing/todo tasks
       for (const [title, s] of Object.entries(sessionMap)) {
         if (!activeTaskSlugs.has(title)) continue;
         const isBgActive = s.status === 'idle' && s.childProcesses > 0;
@@ -287,36 +282,44 @@ app.get('/api/state', async (req, res) => {
     return { id: p.id, name: p.name, path: p.path, content, stats, sessions, sessionMap };
   }));
 
-  res.json({ projects });
-});
+  return Response.json({ projects });
+}
 
-// GET /project/:projectId — serve dashboard.html with injected projectId
-app.get('/project/:projectId', async (req, res) => {
-  const { projectId } = req.params;
+async function handleServeDashboard() {
+  const file = Bun.file(path.join(ASSETS_DIR, 'dashboard.html'));
+  if (await file.exists()) {
+    return new Response(file, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+  return new Response('dashboard.html not found', { status: 500 });
+}
+
+async function handleProjectDashboard(projectId) {
   const project = await getProjectById(projectId);
-  if (!project) return res.status(404).send('Project not found');
+  if (!project) return new Response('Project not found', { status: 404 });
 
-  let html;
-  try {
-    html = await fs.readFile(path.join(ASSETS_DIR, 'dashboard.html'), 'utf8');
-  } catch {
-    return res.status(500).send('dashboard.html not found in assets/');
+  const file = Bun.file(path.join(ASSETS_DIR, 'dashboard.html'));
+  if (!(await file.exists())) {
+    return new Response('dashboard.html not found in assets/', { status: 500 });
   }
 
+  let html = await file.text();
   const script = `<script>window.__projectId = ${JSON.stringify(projectId)}; window.__projectName = ${JSON.stringify(project.name)};</script>`;
   html = html.replace('</head>', `${script}\n</head>`);
-  res.type('html').send(html);
-});
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
 
-// PUT /api/tasks/:projectId
-app.put('/api/tasks/:projectId', async (req, res) => {
-  const { projectId } = req.params;
+async function handlePutTasks(projectId, req) {
   const project = await getProjectById(projectId);
-  if (!project) return res.status(404).json({ error: 'Project not found' });
+  if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
-  const { content } = req.body;
+  let body;
+  try { body = await req.json(); } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const { content } = body;
   if (typeof content !== 'string') {
-    return res.status(400).json({ error: 'content must be a string' });
+    return Response.json({ error: 'content must be a string' }, { status: 400 });
   }
 
   const filePath = tasksAbsolute(project.path);
@@ -324,15 +327,19 @@ app.put('/api/tasks/:projectId', async (req, res) => {
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content, 'utf8');
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to write TASKS.md: ' + err.message });
+    return Response.json({ error: 'Failed to write TASKS.md: ' + err.message }, { status: 500 });
   }
-  res.json({ ok: true });
-});
+  return Response.json({ ok: true });
+}
 
-// POST /api/heartbeat — receive heartbeat from hook
-app.post('/api/heartbeat', (req, res) => {
-  const { sessionId, state, pid, cwd } = req.body;
-  if (!sessionId || !state) return res.status(400).json({ error: 'missing sessionId or state' });
+async function handleHeartbeat(req) {
+  let body;
+  try { body = await req.json(); } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const { sessionId, state, pid, cwd } = body;
+  if (!sessionId || !state) return Response.json({ error: 'missing sessionId or state' }, { status: 400 });
   if (state === 'notfound') {
     heartbeats.delete(sessionId);
   } else {
@@ -342,17 +349,20 @@ app.post('/api/heartbeat', (req, res) => {
     heartbeats.set(sessionId, { state, ts: now, stateTs, pid: pid || null, cwd: cwd || prev?.cwd || null });
   }
   saveHeartbeats();
-  res.json({ ok: true });
-});
+  return Response.json({ ok: true });
+}
 
-// POST /api/focus-ghostty-tab — focus a Ghostty tab by matching title substring
-app.post('/api/focus-ghostty-tab', async (req, res) => {
-  const { title } = req.body;
-  if (!title || typeof title !== 'string') {
-    return res.status(400).json({ error: 'title is required' });
+async function handleFocusGhosttyTab(req) {
+  let body;
+  try { body = await req.json(); } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  // Use Ghostty 1.3.0 native AppleScript API instead of System Events UI hack
+  const { title } = body;
+  if (!title || typeof title !== 'string') {
+    return Response.json({ error: 'title is required' }, { status: 400 });
+  }
+
   const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
   const script = `
 tell application "Ghostty"
@@ -374,110 +384,67 @@ end tell`;
     const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: OSASCRIPT_TIMEOUT_MS });
     const result = stdout.trim();
     if (result === 'focused') {
-      res.json({ ok: true });
-    } else {
-      res.json({ ok: false, error: 'No matching tab found' });
+      return Response.json({ ok: true });
     }
+    return Response.json({ ok: false, error: 'No matching tab found' });
   } catch (err) {
-    res.status(500).json({ error: 'AppleScript failed: ' + err.message });
+    return Response.json({ error: 'AppleScript failed: ' + err.message }, { status: 500 });
   }
-});
+}
 
-// GET /api/watch/:projectId — SSE endpoint for file change notifications
-// Watches the parent directory instead of the file itself, so atomic writes
-// (write temp file → rename) don't break the watcher on macOS.
-app.get('/api/watch/:projectId', async (req, res) => {
-  const { projectId } = req.params;
+async function handleWatch(projectId) {
   const project = await getProjectById(projectId);
-  if (!project) return res.status(404).json({ error: 'Project not found' });
+  if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
   const dirPath = tasksDir(project.path);
   const targetFile = TASKS_FILENAME;
 
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  });
-  res.write('data: {"connected":true}\n\n');
-  sseConnections.add(res);
-
-  let debounceTimer = null;
   let watcher;
-  try {
-    watcher = fsSync.watch(dirPath, (eventType, filename) => {
-      if (filename !== targetFile) return;
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        try {
-          res.write('data: {"changed":true}\n\n');
-        } catch { /* ignored */ }
-      }, SSE_DEBOUNCE_MS);
-    });
-  } catch (err) {
-    res.write(`data: {"error":"watch failed: ${err.message}"}\n\n`);
-    res.end();
-    return;
-  }
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue('data: {"connected":true}\n\n');
 
-  req.on('close', () => {
-    clearTimeout(debounceTimer);
-    sseConnections.delete(res);
-    if (watcher) watcher.close();
-  });
-});
-
-// ===== OAuth Usage Proxy =====
-let cachedOAuthToken = null;
-let usageCache = { data: null, fetchedAt: 0 };
-const USAGE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
-
-function getOAuthToken(forceRefresh = false) {
-  return new Promise((resolve, reject) => {
-    if (cachedOAuthToken && !forceRefresh) return resolve(cachedOAuthToken);
-    cachedOAuthToken = null;
-    execFileCb('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], (err, stdout) => {
-      if (err) return reject(err);
+      let debounceTimer = null;
       try {
-        const creds = JSON.parse(stdout.trim());
-        cachedOAuthToken = creds.claudeAiOauth?.accessToken;
-        if (!cachedOAuthToken) return reject(new Error('No accessToken in credentials'));
-        resolve(cachedOAuthToken);
-      } catch (e) {
-        reject(e);
+        watcher = fsSync.watch(dirPath, (eventType, filename) => {
+          if (filename !== targetFile) return;
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            try {
+              controller.enqueue('data: {"changed":true}\n\n');
+            } catch { /* ignored */ }
+          }, SSE_DEBOUNCE_MS);
+        });
+      } catch (err) {
+        controller.enqueue(`data: {"error":"watch failed: ${err.message}"}\n\n`);
+        controller.close();
+        return;
       }
-    });
+
+      // Store cleanup references on the controller
+      controller._debounceTimer = debounceTimer;
+      controller._watcher = watcher;
+    },
+    cancel() {
+      if (watcher) watcher.close();
+    },
   });
+
+  const response = new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+  sseConnections.add(response);
+  return response;
 }
 
-function fetchUsageFromAPI(token) {
-  return new Promise((resolve, reject) => {
-    const req = https.get('https://api.anthropic.com/api/oauth/usage', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'anthropic-beta': 'oauth-2025-04-20',
-      },
-    }, (resp) => {
-      let body = '';
-      resp.on('data', chunk => body += chunk);
-      resp.on('end', () => {
-        if (resp.statusCode === 200) {
-          resolve(JSON.parse(body));
-        } else {
-          const err = new Error(`API returned ${resp.statusCode}`);
-          err.statusCode = resp.statusCode;
-          reject(err);
-        }
-      });
-    });
-    req.on('error', reject);
-  });
-}
-
-app.get('/api/usage', async (req, res) => {
+async function handleUsage() {
   const now = Date.now();
   if (usageCache.data && (now - usageCache.fetchedAt) < USAGE_CACHE_TTL) {
-    return res.json(usageCache.data);
+    return Response.json(usageCache.data);
   }
   try {
     let token = await getOAuthToken();
@@ -493,36 +460,92 @@ app.get('/api/usage', async (req, res) => {
       }
     }
     usageCache = { data: result, fetchedAt: Date.now() };
-    res.json(result);
+    return Response.json(result);
   } catch (err) {
-    if (usageCache.data) return res.json(usageCache.data);
-    res.json({ error: err.message });
+    if (usageCache.data) return Response.json(usageCache.data);
+    return Response.json({ error: err.message });
   }
+}
+
+function serveStaticFile(filePath) {
+  const file = Bun.file(filePath);
+  return new Response(file);
+}
+
+// ===== Server =====
+
+const server = Bun.serve({
+  port: PORT,
+  hostname: '127.0.0.1',
+  async fetch(req) {
+    lastActivityAt = Date.now();
+
+    const url = new URL(req.url);
+    const pathname = url.pathname;
+    const method = req.method;
+
+    try {
+      // Static assets
+      if (pathname.startsWith('/assets/')) {
+        const relative = pathname.slice('/assets/'.length);
+        // Prevent directory traversal
+        if (relative.includes('..')) return new Response('Forbidden', { status: 403 });
+        const filePath = path.join(ASSETS_DIR, relative);
+        const file = Bun.file(filePath);
+        if (await file.exists()) return new Response(file);
+        return new Response('Not found', { status: 404 });
+      }
+
+      // Service worker
+      if (pathname === '/sw.js' && method === 'GET') {
+        const file = Bun.file(path.join(ASSETS_DIR, 'sw.js'));
+        return new Response(file, {
+          headers: {
+            'Service-Worker-Allowed': '/',
+            'Cache-Control': 'no-cache',
+          },
+        });
+      }
+
+      // Dashboard shell
+      if ((pathname === '/' || pathname === '/offline') && method === 'GET') {
+        return handleServeDashboard();
+      }
+
+      // API routes
+      if (pathname === '/api/state' && method === 'GET') return handleGetState();
+      if (pathname === '/api/health' && method === 'GET') return Response.json({ ok: true });
+      if (pathname === '/api/heartbeat' && method === 'POST') return handleHeartbeat(req);
+      if (pathname === '/api/focus-ghostty-tab' && method === 'POST') return handleFocusGhosttyTab(req);
+      if (pathname === '/api/usage' && method === 'GET') return handleUsage();
+
+      // Parameterized routes
+      const watchMatch = pathname.match(/^\/api\/watch\/(.+)$/);
+      if (watchMatch && method === 'GET') return handleWatch(watchMatch[1]);
+
+      const tasksMatch = pathname.match(/^\/api\/tasks\/(.+)$/);
+      if (tasksMatch && method === 'PUT') return handlePutTasks(tasksMatch[1], req);
+
+      const projectMatch = pathname.match(/^\/project\/(.+)$/);
+      if (projectMatch && method === 'GET') return handleProjectDashboard(projectMatch[1]);
+
+      return new Response('Not found', { status: 404 });
+    } catch (err) {
+      console.error('Unhandled error:', err);
+      return Response.json({ error: 'Internal server error' }, { status: 500 });
+    }
+  },
 });
 
-// GET /api/health — connectivity check for client
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true });
-});
+console.log(`Octask Dashboard running at http://localhost:${PORT}`);
 
-// Global error handler — catch unhandled route errors
-app.use((err, req, res, _next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+// ===== Graceful shutdown =====
 
 function gracefulShutdown() {
   console.log('[octask] Idle for 24h — shutting down');
   saveHeartbeatsNow();
-  for (const res of sseConnections) {
-    try { res.end(); } catch { /* connection closed */ }
-  }
   sseConnections.clear();
-  if (!server) {
-    process.exit(0);
-    return;
-  }
-  server.close(() => process.exit(0));
+  server.stop();
   setTimeout(() => process.exit(0), SHUTDOWN_FORCE_TIMEOUT_MS);
 }
 
@@ -534,7 +557,3 @@ setInterval(() => {
 
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
-
-server = app.listen(PORT, '127.0.0.1', () => {
-  console.log(`Octask Dashboard running at http://localhost:${PORT}`);
-});
