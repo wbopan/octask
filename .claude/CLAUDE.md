@@ -64,7 +64,7 @@ Three files (HTML structure, CSS, JS), no framework or build tooling. Key intern
 
 ## Marketplace
 
-Marketplace 配置在本仓库 `.claude-plugin/marketplace.json`，`"source": "./"` 表示插件代码就在仓库根目录。更新版本号时需同时更新 `plugin.json` 和 `marketplace.json` 的 `version` 字段。
+Marketplace config is in `.claude-plugin/marketplace.json` with `"source": "./"` pointing to the repo root. When bumping versions, update the `version` field in both `plugin.json` and `marketplace.json`.
 
 ## Key Paths
 

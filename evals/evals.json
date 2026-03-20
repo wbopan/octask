@@ -55,8 +55,8 @@
     {
       "id": 5,
       "name": "respects-discuss-first-in-args",
-      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#user-auth-jwt 先讨论一下，分析一下'. Follow the skill instructions completely. You have access to Read, Edit, Write, Bash, and Glob tools.",
-      "expected_output": "Should mark the task [/], present understanding and plan, then STOP and wait for user input. Should NOT start writing code or creating files. The '先讨论一下' in args means the user wants to discuss first.",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#user-auth-jwt let's discuss first and analyze'. Follow the skill instructions completely. You have access to Read, Edit, Write, Bash, and Glob tools.",
+      "expected_output": "Should mark the task [/], present understanding and plan, then STOP and wait for user input. Should NOT start writing code or creating files. The 'let's discuss first' in args means the user wants to discuss first.",
       "assertions": [
         {"name": "marked-ongoing", "type": "file_contains", "file": "TASKS.md", "value": "[/] User authentication with JWT"},
         {"name": "showed-understanding", "type": "output_contains_any", "values": ["authentication", "JWT", "register", "login"]},
