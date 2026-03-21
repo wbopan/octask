@@ -105,6 +105,12 @@ Project description here.
 
 Status symbols: `[ ]` todo, `[/]` ongoing, `[x]` done, `[-]` backlog.
 
+## Requirements
+
+- **macOS** — project discovery and session monitoring use macOS-specific APIs (Keychain, AppleScript).
+- **Bun** — used as the runtime for the dashboard server.
+- **Ghostty** (optional) — the "jump to terminal session" feature uses Ghostty's AppleScript API. Without Ghostty, all other features work normally.
+
 ## License
 
 [MIT](LICENSE)
