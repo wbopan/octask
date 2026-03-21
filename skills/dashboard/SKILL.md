@@ -43,4 +43,4 @@ open "http://localhost:3847" 2>/dev/null || xdg-open "http://localhost:3847" 2>/
 Report to the user:
 - The dashboard is running at `http://localhost:3847`
 - Suggest they save the page as a **PWA** (Progressive Web App) for quick access — in Chrome/Edge, click the install icon in the address bar or use Menu → "Install app"
-- The server will auto-shutdown after 30 minutes of inactivity
+- The server will auto-shutdown after 24 hours of inactivity

@@ -57,26 +57,26 @@ AC should be **black-box**: it describes observable behavior of the final delive
 **Good AC:**
 ```
 - [ ] Run GEPA baseline #run-gepa-baseline
-    - Set up official GEPA, configured to match our experimental setup with the same data splits and a comparable memory module.
-    - AC: GEPA's optimized prompt and corresponding test score on LoCoMo, evaluated on the same train/val/test split as Engram.
+    Set up official GEPA, configured to match our experimental setup with the same data splits and a comparable memory module.
+    AC: GEPA's optimized prompt and corresponding test score on LoCoMo, evaluated on the same train/val/test split as Engram.
 ```
 
 **Bad — AC specifies implementation:**
 ```
 - [ ] Run GEPA baseline #run-gepa-baseline
-    - AC: Clone repo, apply patch to config.yaml, run `python main.py --dataset locomo`, collect scores.
+    AC: Clone repo, apply patch to config.yaml, run `python main.py --dataset locomo`, collect scores.
 ```
 
 **Bad — AC depends on experimental outcome:**
 ```
 - [ ] Add WebArena benchmark #add-webarena-benchmark
-    - AC: Engram achieves +10pp advantage over seed programs.
+    AC: Engram achieves +10pp advantage over seed programs.
 ```
 
 **Fixed:**
 ```
 - [ ] Add WebArena benchmark #add-webarena-benchmark
-    - AC: Benchmark integrated; all configs (No Memory, Vanilla RAG, Engram) produce test scores on the hosted instance.
+    AC: Benchmark integrated; all configs (No Memory, Vanilla RAG, Engram) produce test scores on the hosted instance.
 ```
 
 ### Task granularity
@@ -118,8 +118,8 @@ Every task carries a short, human-readable ID appended to the title line as a `#
 
 ```
 - [ ] Fix Login Page Auth Bugs #fix-auth-bug
-    - Users intermittently get 403 when logging in with SSO.
-    - AC: SSO login succeeds on all tested providers; no 403 in logs.
+    Users intermittently get 403 when logging in with SSO.
+    AC: SSO login succeeds on all tested providers; no 403 in logs.
 ```
 
 IDs are useful for referencing tasks in commits, conversations, and branch names. When creating a task, always generate an ID from the title. When the user specifies an ID, use it as-is.
@@ -138,9 +138,9 @@ When you finish working on a task, follow this sequence:
 
 ```
 - [x] Fix Login Page Auth Bugs #fix-auth-bug
-    - Users intermittently get 403 when logging in with SSO.
-    - AC: SSO login succeeds on all tested providers; no 403 in logs.
-    - CM: Root cause was stale CSRF tokens after IdP redirect. Added token refresh on the callback route. Tested with Google, Okta, and Azure AD.
+    Users intermittently get 403 when logging in with SSO.
+    AC: SSO login succeeds on all tested providers; no 403 in logs.
+    CM: Root cause was stale CSRF tokens after IdP redirect. Added token refresh on the callback route. Tested with Google, Okta, and Azure AD.
 ```
 
 When a task is deferred, mark it `[-]` rather than deleting it. Backlog items are recognized, worthwhile work that hasn't been pulled into the current focus yet — they're expected to be picked up later. If a task is truly obsolete or superseded, delete it — backlog is not a graveyard.
@@ -152,6 +152,6 @@ The plugin includes an interactive kanban dashboard. Use the `/dashboard` skill 
 The dashboard runs at `http://localhost:3847`. The index page lists all projects (discovered from `~/.claude/projects/`) that have a TASKS.md file. Click a project to open its dashboard. The dashboard:
 
 - **Left sidebar**: Section overview with progress bars. Click a section to filter.
-- **Four status columns**: Ongoing, Pending, Done, Backlog — tasks grouped by section within each column.
+- **Four status columns**: Ongoing, Pending, Backlog, Done — tasks grouped by section within each column.
 - **Drag-and-drop**: Drag cards between columns to change status, or reorder within a column.
 - **Auto-save**: Changes save automatically to disk via the backend API.

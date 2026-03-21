@@ -42,8 +42,8 @@
 ### 1. Install the plugin
 
 ```bash
-claude plugins add-marketplace https://github.com/wbopan/cotask-marketplace.git
-claude plugins install cotask@cotask
+claude plugins marketplace add wbopan/cotask-marketplace
+claude plugins install cotask@cotask-marketplace
 ```
 
 ### 2. Create your first task

@@ -6,7 +6,7 @@ Thanks for your interest in contributing!
 
 ```bash
 # Clone the repo
-git clone https://github.com/anthropics/cotask.git
+git clone https://github.com/wbopan/cotask.git
 cd cotask
 
 # Start the dashboard with hot reload
@@ -20,13 +20,10 @@ The dashboard runs at `http://localhost:3847`.
 - `server/` — Bun HTTP server and dashboard assets (HTML/CSS/JS, no build step)
 - `skills/` — Skills: `cotask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`
 - `hooks/` — Lifecycle hooks (heartbeat reporting)
-- `scripts/` — Helper scripts (start server, sync to cache)
-- `evals/` — Eval suite for skill behavior testing
 
 ## Development
 
-- Run `bun server/server.js` to start the server.
-- Run `claude evals run evals/evals.json` to run evals.
+- Run `bun --watch server/server.js` to start the server with hot reload.
 - The dashboard is plain HTML/CSS/JS — edit files in `server/assets/` and reload.
 
 ## Pull Requests
