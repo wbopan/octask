@@ -187,7 +187,8 @@ async function buildSessionMap(projectId) {
             const childPids = stdout.trim().split('\n').filter(Boolean);
             if (childPids.length > 0) {
               const { stdout: psOut } = await execFileAsync('ps', ['-p', childPids.join(','), '-o', 'command=']);
-              childProcesses = psOut.split('\n').filter(Boolean).filter(cmd => !cmd.includes('caffeinate')).length;
+              const IGNORED_PROCESSES = ['caffeinate', 'langserver'];
+              childProcesses = psOut.split('\n').filter(Boolean).filter(cmd => !IGNORED_PROCESSES.some(p => cmd.includes(p))).length;
             }
           } catch { /* ignored */ }
         }
