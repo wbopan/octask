@@ -2,13 +2,17 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
+import http from 'http';
+import { fileURLToPath } from 'url';
 import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 const execFileAsync = promisify(execFileCb);
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const PORT = 3847;
 const PROJECTS_DIR = path.join(os.homedir(), '.claude', 'projects');
-const ASSETS_DIR = path.join(import.meta.dirname, 'assets');
+const ASSETS_DIR = path.join(__dirname, 'assets');
 let lastActivityAt = Date.now();
 const IDLE_SHUTDOWN_MS = 24 * 60 * 60 * 1000;
 const GREP_MAX_BUFFER = 1024 * 1024;
@@ -22,6 +26,70 @@ const DISCOVER_CACHE_TTL = 10_000;
 const TASKS_CONTENT_CACHE_TTL = 60_000;
 const CUSTOM_TITLE_CACHE_TTL = 10_000;
 const sseConnections = new Set();
+
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.webmanifest': 'application/manifest+json',
+};
+
+function getMimeType(filePath) {
+  return MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+}
+
+// --- Response helpers ---
+
+function jsonResponse(res, data, status = 200) {
+  const body = JSON.stringify(data);
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(body);
+}
+
+function textResponse(res, text, status = 200, headers = {}) {
+  res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', ...headers });
+  res.end(text);
+}
+
+function htmlResponse(res, html, status = 200) {
+  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+async function fileResponse(res, filePath) {
+  try {
+    const data = await fs.readFile(filePath);
+    res.writeHead(200, { 'Content-Type': getMimeType(filePath) });
+    res.end(data);
+  } catch {
+    textResponse(res, 'Not found', 404);
+  }
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString()));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
 // Check if TASKS.md exists for a project (root level).
 async function tasksFileExists(projectPath) {
@@ -266,10 +334,10 @@ async function buildSessionMap(projectId) {
 }
 
 async function scanBackgroundTasks(projectId, sessionId) {
-  const tasksDir = path.join('/private/tmp', 'claude-501', projectId, sessionId, 'tasks');
+  const bgTasksDir = path.join('/private/tmp', 'claude-501', projectId, sessionId, 'tasks');
   let taskFiles;
   try {
-    taskFiles = await fs.readdir(tasksDir, { withFileTypes: true });
+    taskFiles = await fs.readdir(bgTasksDir, { withFileTypes: true });
   } catch { return []; }
 
   const tasks = [];
@@ -278,7 +346,7 @@ async function scanBackgroundTasks(projectId, sessionId) {
     const id = file.name.slice(0, -7);
     if (!/^[ab]/.test(id)) continue;
 
-    const filePath = path.join(tasksDir, file.name);
+    const filePath = path.join(bgTasksDir, file.name);
     try {
       const st = await fs.lstat(filePath);
 
@@ -338,7 +406,7 @@ async function fetchUsageFromAPI(token) {
 
 // ===== Route handlers =====
 
-async function handleGetState() {
+async function handleGetState(res) {
   const discovered = await discoverProjects();
 
   // Precompute alive CWDs once (process.kill is sync, very fast)
@@ -370,44 +438,48 @@ async function handleGetState() {
     return { id: p.id, name: p.name, path: p.path, content, stats, sessions, sessionMap };
   }));
 
-  return Response.json({ projects });
+  jsonResponse(res, { projects });
 }
 
-async function handleServeDashboard() {
-  const file = Bun.file(path.join(ASSETS_DIR, 'dashboard.html'));
-  if (await file.exists()) {
-    return new Response(file, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+async function handleServeDashboard(res) {
+  const filePath = path.join(ASSETS_DIR, 'dashboard.html');
+  try {
+    const html = await fs.readFile(filePath, 'utf8');
+    htmlResponse(res, html);
+  } catch {
+    textResponse(res, 'dashboard.html not found', 500);
   }
-  return new Response('dashboard.html not found', { status: 500 });
 }
 
-async function handleProjectDashboard(projectId) {
+async function handleProjectDashboard(res, projectId) {
   const project = await getProjectById(projectId);
-  if (!project) return new Response('Project not found', { status: 404 });
+  if (!project) return textResponse(res, 'Project not found', 404);
 
-  const file = Bun.file(path.join(ASSETS_DIR, 'dashboard.html'));
-  if (!(await file.exists())) {
-    return new Response('dashboard.html not found in assets/', { status: 500 });
+  const filePath = path.join(ASSETS_DIR, 'dashboard.html');
+  let html;
+  try {
+    html = await fs.readFile(filePath, 'utf8');
+  } catch {
+    return textResponse(res, 'dashboard.html not found in assets/', 500);
   }
 
-  let html = await file.text();
   const script = `<script>window.__projectId = ${JSON.stringify(projectId)}; window.__projectName = ${JSON.stringify(project.name)};</script>`;
   html = html.replace('</head>', `${script}\n</head>`);
-  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  htmlResponse(res, html);
 }
 
-async function handlePutTasks(projectId, req) {
+async function handlePutTasks(res, projectId, req) {
   const project = await getProjectById(projectId);
-  if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+  if (!project) return jsonResponse(res, { error: 'Project not found' }, 404);
 
   let body;
-  try { body = await req.json(); } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  try { body = await parseBody(req); } catch {
+    return jsonResponse(res, { error: 'Invalid JSON' }, 400);
   }
 
   const { content } = body;
   if (typeof content !== 'string') {
-    return Response.json({ error: 'content must be a string' }, { status: 400 });
+    return jsonResponse(res, { error: 'content must be a string' }, 400);
   }
 
   const filePath = tasksAbsolute(project.path);
@@ -415,19 +487,19 @@ async function handlePutTasks(projectId, req) {
     await fs.writeFile(filePath, content, 'utf8');
     tasksContentCache.delete(projectId); // invalidate cache on write
   } catch (err) {
-    return Response.json({ error: 'Failed to write TASKS.md: ' + err.message }, { status: 500 });
+    return jsonResponse(res, { error: 'Failed to write TASKS.md: ' + err.message }, 500);
   }
-  return Response.json({ ok: true });
+  jsonResponse(res, { ok: true });
 }
 
-async function handleHeartbeat(req) {
+async function handleHeartbeat(res, req) {
   let body;
-  try { body = await req.json(); } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  try { body = await parseBody(req); } catch {
+    return jsonResponse(res, { error: 'Invalid JSON' }, 400);
   }
 
   const { sessionId, state, pid, cwd } = body;
-  if (!sessionId || !state) return Response.json({ error: 'missing sessionId or state' }, { status: 400 });
+  if (!sessionId || !state) return jsonResponse(res, { error: 'missing sessionId or state' }, 400);
   if (state === 'notfound') {
     heartbeats.delete(sessionId);
   } else {
@@ -440,18 +512,18 @@ async function handleHeartbeat(req) {
   const hbCwd = cwd || heartbeats.get(sessionId)?.cwd;
   if (hbCwd) customTitleCache.delete(encodeProjectPath(hbCwd));
   saveHeartbeats();
-  return Response.json({ ok: true });
+  jsonResponse(res, { ok: true });
 }
 
-async function handleFocusGhosttyTab(req) {
+async function handleFocusGhosttyTab(res, req) {
   let body;
-  try { body = await req.json(); } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  try { body = await parseBody(req); } catch {
+    return jsonResponse(res, { error: 'Invalid JSON' }, 400);
   }
 
   const { title } = body;
   if (!title || typeof title !== 'string') {
-    return Response.json({ error: 'title is required' }, { status: 400 });
+    return jsonResponse(res, { error: 'title is required' }, 400);
   }
 
   const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
@@ -475,67 +547,59 @@ end tell`;
     const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: OSASCRIPT_TIMEOUT_MS });
     const result = stdout.trim();
     if (result === 'focused') {
-      return Response.json({ ok: true });
+      return jsonResponse(res, { ok: true });
     }
-    return Response.json({ ok: false, error: 'No matching tab found' });
+    jsonResponse(res, { ok: false, error: 'No matching tab found' });
   } catch (err) {
-    return Response.json({ error: 'AppleScript failed: ' + err.message }, { status: 500 });
+    jsonResponse(res, { error: 'AppleScript failed: ' + err.message }, 500);
   }
 }
 
-async function handleWatch(projectId) {
+async function handleWatch(res, projectId) {
   const project = await getProjectById(projectId);
-  if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+  if (!project) return jsonResponse(res, { error: 'Project not found' }, 404);
 
   const dirPath = tasksDir(project.path);
   const targetFile = TASKS_FILENAME;
 
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  res.write('data: {"connected":true}\n\n');
+
+  let debounceTimer = null;
   let watcher;
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue('data: {"connected":true}\n\n');
+  try {
+    watcher = fsSync.watch(dirPath, (eventType, filename) => {
+      if (filename !== targetFile) return;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        try {
+          res.write('data: {"changed":true}\n\n');
+        } catch { /* ignored */ }
+      }, SSE_DEBOUNCE_MS);
+    });
+  } catch (err) {
+    res.write(`data: {"error":"watch failed: ${err.message}"}\n\n`);
+    res.end();
+    return;
+  }
 
-      let debounceTimer = null;
-      try {
-        watcher = fsSync.watch(dirPath, (eventType, filename) => {
-          if (filename !== targetFile) return;
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            try {
-              controller.enqueue('data: {"changed":true}\n\n');
-            } catch { /* ignored */ }
-          }, SSE_DEBOUNCE_MS);
-        });
-      } catch (err) {
-        controller.enqueue(`data: {"error":"watch failed: ${err.message}"}\n\n`);
-        controller.close();
-        return;
-      }
+  sseConnections.add(res);
 
-      // Store cleanup references on the controller
-      controller._debounceTimer = debounceTimer;
-      controller._watcher = watcher;
-    },
-    cancel() {
-      if (watcher) watcher.close();
-    },
+  res.on('close', () => {
+    clearTimeout(debounceTimer);
+    if (watcher) watcher.close();
+    sseConnections.delete(res);
   });
-
-  const response = new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
-  sseConnections.add(response);
-  return response;
 }
 
-async function handleUsage() {
+async function handleUsage(res) {
   const now = Date.now();
   if (usageCache.data && (now - usageCache.fetchedAt) < USAGE_CACHE_TTL) {
-    return Response.json(usageCache.data);
+    return jsonResponse(res, usageCache.data);
   }
   try {
     let token = await getOAuthToken();
@@ -551,95 +615,95 @@ async function handleUsage() {
       }
     }
     usageCache = { data: result, fetchedAt: Date.now() };
-    return Response.json(result);
+    jsonResponse(res, result);
   } catch (err) {
-    if (usageCache.data) return Response.json(usageCache.data);
-    return Response.json({ error: err.message });
+    if (usageCache.data) return jsonResponse(res, usageCache.data);
+    jsonResponse(res, { error: err.message });
   }
-}
-
-function serveStaticFile(filePath) {
-  const file = Bun.file(filePath);
-  return new Response(file);
 }
 
 // ===== Server =====
 
-const server = Bun.serve({
-  port: PORT,
-  hostname: '127.0.0.1',
-  async fetch(req) {
-    lastActivityAt = Date.now();
+const server = http.createServer(async (req, res) => {
+  lastActivityAt = Date.now();
 
-    const url = new URL(req.url);
-    const pathname = url.pathname;
-    const method = req.method;
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = url.pathname;
+  const method = req.method;
 
-    try {
-      // Static assets
-      if (pathname.startsWith('/assets/')) {
-        const relative = pathname.slice('/assets/'.length);
-        // Prevent directory traversal
-        if (relative.includes('..')) return new Response('Forbidden', { status: 403 });
-        const filePath = path.join(ASSETS_DIR, relative);
-        const file = Bun.file(filePath);
-        if (await file.exists()) return new Response(file);
-        return new Response('Not found', { status: 404 });
-      }
-
-      // Service worker
-      if (pathname === '/sw.js' && method === 'GET') {
-        const file = Bun.file(path.join(ASSETS_DIR, 'sw.js'));
-        return new Response(file, {
-          headers: {
-            'Service-Worker-Allowed': '/',
-            'Cache-Control': 'no-cache',
-          },
-        });
-      }
-
-      // Dashboard shell
-      if ((pathname === '/' || pathname === '/offline') && method === 'GET') {
-        return handleServeDashboard();
-      }
-
-      // API routes
-      if (pathname === '/api/state' && method === 'GET') return handleGetState();
-      if (pathname === '/api/health' && method === 'GET') return Response.json({ ok: true });
-      if (pathname === '/api/heartbeat' && method === 'POST') return handleHeartbeat(req);
-      if (pathname === '/api/focus-ghostty-tab' && method === 'POST') return handleFocusGhosttyTab(req);
-      if (pathname === '/api/usage' && method === 'GET') return handleUsage();
-
-      // Parameterized routes
-      const watchMatch = pathname.match(/^\/api\/watch\/(.+)$/);
-      if (watchMatch && method === 'GET') return handleWatch(watchMatch[1]);
-
-      const tasksMatch = pathname.match(/^\/api\/tasks\/(.+)$/);
-      if (tasksMatch && method === 'PUT') return handlePutTasks(tasksMatch[1], req);
-
-      const projectMatch = pathname.match(/^\/project\/(.+)$/);
-      if (projectMatch && method === 'GET') return handleProjectDashboard(projectMatch[1]);
-
-      return new Response('Not found', { status: 404 });
-    } catch (err) {
-      console.error('Unhandled error:', err);
-      return Response.json({ error: 'Internal server error' }, { status: 500 });
+  try {
+    // Static assets
+    if (pathname.startsWith('/assets/')) {
+      const relative = pathname.slice('/assets/'.length);
+      // Prevent directory traversal
+      if (relative.includes('..')) return textResponse(res, 'Forbidden', 403);
+      const filePath = path.join(ASSETS_DIR, relative);
+      return fileResponse(res, filePath);
     }
-  },
+
+    // Service worker
+    if (pathname === '/sw.js' && method === 'GET') {
+      const filePath = path.join(ASSETS_DIR, 'sw.js');
+      try {
+        const data = await fs.readFile(filePath);
+        res.writeHead(200, {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Service-Worker-Allowed': '/',
+          'Cache-Control': 'no-cache',
+        });
+        res.end(data);
+      } catch {
+        textResponse(res, 'Not found', 404);
+      }
+      return;
+    }
+
+    // Dashboard shell
+    if ((pathname === '/' || pathname === '/offline') && method === 'GET') {
+      return handleServeDashboard(res);
+    }
+
+    // API routes
+    if (pathname === '/api/state' && method === 'GET') return handleGetState(res);
+    if (pathname === '/api/health' && method === 'GET') return jsonResponse(res, { ok: true });
+    if (pathname === '/api/heartbeat' && method === 'POST') return handleHeartbeat(res, req);
+    if (pathname === '/api/focus-ghostty-tab' && method === 'POST') return handleFocusGhosttyTab(res, req);
+    if (pathname === '/api/usage' && method === 'GET') return handleUsage(res);
+
+    // Parameterized routes
+    const watchMatch = pathname.match(/^\/api\/watch\/(.+)$/);
+    if (watchMatch && method === 'GET') return handleWatch(res, watchMatch[1]);
+
+    const tasksMatch = pathname.match(/^\/api\/tasks\/(.+)$/);
+    if (tasksMatch && method === 'PUT') return handlePutTasks(res, tasksMatch[1], req);
+
+    const projectMatch = pathname.match(/^\/project\/(.+)$/);
+    if (projectMatch && method === 'GET') return handleProjectDashboard(res, projectMatch[1]);
+
+    textResponse(res, 'Not found', 404);
+  } catch (err) {
+    console.error('Unhandled error:', err);
+    jsonResponse(res, { error: 'Internal server error' }, 500);
+  }
 });
 
-console.log(`Cotask Dashboard running at http://localhost:${PORT}`);
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`Cotask Dashboard running at http://localhost:${PORT}`);
+});
 
 // Warm all caches at startup so the first dashboard load is fast
-handleGetState().catch(() => {});
+handleGetState({ writeHead() {}, end() {} }).catch(() => {});
 
 // ===== Graceful shutdown =====
 
 function gracefulShutdown() {
   console.log('[cotask] Idle for 24h — shutting down');
   saveHeartbeatsNow();
+  for (const conn of sseConnections) {
+    try { conn.end(); } catch { /* ignored */ }
+  }
   sseConnections.clear();
-  server.stop();
+  server.close();
   setTimeout(() => process.exit(0), SHUTDOWN_FORCE_TIMEOUT_MS);
 }
 
@@ -651,3 +715,4 @@ setInterval(() => {
 
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
+

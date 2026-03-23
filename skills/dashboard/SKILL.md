@@ -20,7 +20,7 @@ curl -s http://localhost:3847/api/health
 
 ```bash
 SERVER_DIR="${CLAUDE_PLUGIN_ROOT}/server"
-cd "${SERVER_DIR}" && nohup bun server.js > /tmp/task-dashboard.log 2>&1 &
+cd "${SERVER_DIR}" && nohup node server.js > /tmp/task-dashboard.log 2>&1 &
 ```
 
 Wait up to 6 seconds for the server to become ready:

@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/github/v/tag/wbopan/cotask?style=for-the-badge&label=version&color=0d9488" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/wbopan/cotask?style=for-the-badge&color=0d9488" alt="License"></a>
-  <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=for-the-badge" alt="Bun"></a>
+  <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/badge/runtime-Node.js-339933?style=for-the-badge" alt="Node.js"></a>
   <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/badge/plugin-Claude_Code-7c3aed?style=for-the-badge" alt="Claude Code"></a>
 </p>
 
@@ -108,7 +108,7 @@ Status symbols: `[ ]` todo, `[/]` ongoing, `[x]` done, `[-]` backlog.
 ## Requirements
 
 - **macOS** — project discovery and session monitoring use macOS-specific APIs (Keychain, AppleScript).
-- **Bun** — used as the runtime for the dashboard server.
+- **Node.js** (v18.19+) — used as the runtime for the dashboard server.
 - **Ghostty** (optional) — the "jump to terminal session" feature uses Ghostty's AppleScript API. Without Ghostty, all other features work normally.
 
 ## License

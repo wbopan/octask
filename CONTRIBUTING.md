@@ -10,20 +10,20 @@ git clone https://github.com/wbopan/cotask.git
 cd cotask
 
 # Start the dashboard with hot reload
-bun --watch server/server.js
+node --watch server/server.js
 ```
 
 The dashboard runs at `http://localhost:3847`.
 
 ## Project Structure
 
-- `server/` — Bun HTTP server and dashboard assets (HTML/CSS/JS, no build step)
+- `server/` — Node HTTP server and dashboard assets (HTML/CSS/JS, no build step)
 - `skills/` — Skills: `cotask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`
 - `hooks/` — Lifecycle hooks (heartbeat reporting)
 
 ## Development
 
-- Run `bun --watch server/server.js` to start the server with hot reload.
+- Run `node --watch server/server.js` to start the server with hot reload.
 - The dashboard is plain HTML/CSS/JS — edit files in `server/assets/` and reload.
 
 ## Pull Requests
